@@ -1,0 +1,64 @@
+schemaVersion: 1
+
+name: g2rain-appkit
+family: platform-shared-library
+role: G2rain 前端公共契约与基础能力库
+repository: g2rain/g2rain-appkit
+implementationType: frontend-shared-packages
+platformRole: supporting-library
+implementationPolicy: organization-singleton
+
+architectureRegistration:
+  repository: https://github.com/g2rain/g2rain
+  ref: feature/g2rain-architectur-init
+  centralDocument: docs/architecture/platform-libraries/g2rain-appkit.md
+  profile: null
+  status: registered
+  note: 中央架构发布包含本登记的新 architecture-v* 快照后，将 ref 切换为固定 Tag
+
+peerLibraries:
+  - g2rain/g2rain-common
+  - g2rain/g2rain-spring-boot-starter
+
+relatedProfiles:
+  - id: frontend-app
+    version: 1.0.0
+  - id: frontend-shell
+    version: 1.0.0
+
+packages:
+  - "@g2rain/theme"
+  - "@g2rain/ui"
+  - "@g2rain/http"
+  - "@g2rain/runtime"
+
+documentation:
+  entry: docs/README.md
+  architecture: docs/architecture/overview.md
+  packageBoundaries: docs/packages/README.md
+  componentBaseline: docs/packages/component-migration-baseline.md
+  platformDataComponents: docs/packages/platform-data-components.md
+  runtimeContracts: docs/packages/http-runtime-contract.md
+  development: docs/development/repository-conventions.md
+  buildAndTest: docs/development/build-and-test-contract.md
+  integrationReadiness: docs/development/integration-readiness.md
+  release: docs/release/publishing.md
+  migration: docs/migration/application-migration.md
+  changelog: CHANGELOG.md
+
+validation:
+  status: pilot-integration-in-progress
+  reviewedAt: "2026-09-17"
+  readiness:
+    libraryPhaseOne: passed
+    pilotIntegration: in-progress
+    themeUiPilot: closed-by-user-confirmation
+    httpPilot: pending
+    registryRelease: not-ready
+    platformClosedLoop: incomplete
+  note: >
+    Theme、UI、HTTP、Runtime 首版实现与 Playground 已通过类型检查、测试、构建、制品检查和 npm pack dry-run。
+    g2rain-member-app 已通过 npm pack 安装 @g2rain/theme 与 @g2rain/ui，完成兼容转发与生产构建；
+    Theme/UI 按用户 2026-09-17 确认记录为试点闭环，不代表全部联调测试已通过。
+    主题多实例释放、主壳广播、真实页面联调保留为跟踪项。HTTP 切换尚未验收。
+    正式 npm 发布尚未执行。

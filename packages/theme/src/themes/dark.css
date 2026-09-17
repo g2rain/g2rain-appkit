@@ -1,0 +1,25 @@
+:root[data-g2-theme='dark'] {
+  color-scheme: dark;
+
+  --g2-color-primary: #409eff;
+  --g2-color-success: #67c23a;
+  --g2-color-warning: #e6a23c;
+  --g2-color-danger: #f56c6c;
+  --g2-color-info: #909399;
+
+  --g2-text-primary: #e5eaf3;
+  --g2-text-regular: #cfd3dc;
+  --g2-text-secondary: #a3a6ad;
+  --g2-text-placeholder: #8d9095;
+
+  --g2-bg-page: #141414;
+  --g2-bg-container: #1d1e1f;
+  --g2-bg-overlay: #1d1e1f;
+  --g2-bg-muted: #262727;
+
+  --g2-border-color: #4c4d4f;
+  --g2-border-color-light: #414243;
+  --g2-fill-light: #262727;
+  --g2-mask-color: rgb(0 0 0 / 80%);
+}
+

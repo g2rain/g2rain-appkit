@@ -1,0 +1,31 @@
+{
+  "name": "@g2rain/theme",
+  "version": "0.1.0",
+  "description": "G2rain semantic design tokens and Element Plus theme mapping.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./styles.css": "./dist/styles.css",
+    "./tokens.css": "./dist/tokens.css",
+    "./base.css": "./dist/base.css",
+    "./element-plus.css": "./dist/element-plus.css",
+    "./light.css": "./dist/themes/light.css",
+    "./dark.css": "./dist/themes/dark.css"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "build": "tsx ../../scripts/build-theme.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
+

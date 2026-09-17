@@ -1,0 +1,22 @@
+:root {
+  --el-color-primary: var(--g2-color-primary);
+  --el-color-success: var(--g2-color-success);
+  --el-color-warning: var(--g2-color-warning);
+  --el-color-danger: var(--g2-color-danger);
+  --el-color-info: var(--g2-color-info);
+  --el-text-color-primary: var(--g2-text-primary);
+  --el-text-color-regular: var(--g2-text-regular);
+  --el-text-color-secondary: var(--g2-text-secondary);
+  --el-text-color-placeholder: var(--g2-text-placeholder);
+  --el-bg-color: var(--g2-bg-container);
+  --el-bg-color-page: var(--g2-bg-page);
+  --el-bg-color-overlay: var(--g2-bg-overlay);
+  --el-border-color: var(--g2-border-color);
+  --el-border-color-light: var(--g2-border-color-light);
+  --el-fill-color-light: var(--g2-fill-light);
+  --el-mask-color: var(--g2-mask-color);
+  --el-border-radius-base: var(--g2-border-radius-base);
+  --el-font-size-base: var(--g2-font-size-base);
+  --el-transition-duration: var(--g2-transition-duration);
+}
+

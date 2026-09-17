@@ -1,0 +1,33 @@
+{
+  "name": "g2rain-appkit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "pack:check": "tsx scripts/check-package-artifacts.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vitest/coverage-v8": "5.0.0",
+    "jsdom": "29.1.1",
+    "tsx": "^4.21.0",
+    "typescript": "5.9.3",
+    "vite": "^7.3.0",
+    "vitest": "5.0.0"
+  },
+  "overrides": {
+    "vite": "^7.3.0"
+  }
+}

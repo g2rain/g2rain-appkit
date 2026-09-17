@@ -1,0 +1,23 @@
+{
+  "name": "@g2rain/playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@g2rain/theme": "0.1.0",
+    "@g2rain/ui": "0.1.0",
+    "@g2rain/runtime": "0.1.0",
+    "element-plus": "^2.13.0",
+    "vue": "^3.5.26"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.3",
+    "vite": "^7.3.0",
+    "vue-tsc": "3.2.1"
+  }
+}

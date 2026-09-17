@@ -1,0 +1,14 @@
+:root {
+  font-family: var(--g2-font-family);
+  font-size: var(--g2-font-size-base);
+  line-height: var(--g2-line-height-base);
+  color: var(--g2-text-primary);
+  background: var(--g2-bg-page);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+

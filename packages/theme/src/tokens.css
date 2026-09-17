@@ -1,0 +1,22 @@
+:root {
+  --g2-font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --g2-font-size-sm: 12px;
+  --g2-font-size-base: 14px;
+  --g2-font-size-lg: 16px;
+  --g2-line-height-base: 1.5;
+
+  --g2-space-xs: 4px;
+  --g2-space-sm: 8px;
+  --g2-space-md: 16px;
+  --g2-space-lg: 24px;
+  --g2-space-xl: 32px;
+
+  --g2-border-radius-sm: 2px;
+  --g2-border-radius-base: 4px;
+  --g2-border-radius-lg: 8px;
+
+  --g2-shadow-sm: 0 1px 3px rgb(0 0 0 / 8%);
+  --g2-shadow-base: 0 4px 12px rgb(0 0 0 / 10%);
+  --g2-transition-duration: 0.2s;
+}
+

@@ -1,0 +1,26 @@
+:root,
+:root[data-g2-theme='light'] {
+  color-scheme: light;
+
+  --g2-color-primary: #409eff;
+  --g2-color-success: #67c23a;
+  --g2-color-warning: #e6a23c;
+  --g2-color-danger: #f56c6c;
+  --g2-color-info: #909399;
+
+  --g2-text-primary: #303133;
+  --g2-text-regular: #606266;
+  --g2-text-secondary: #909399;
+  --g2-text-placeholder: #a8abb2;
+
+  --g2-bg-page: #f5f7fa;
+  --g2-bg-container: #ffffff;
+  --g2-bg-overlay: #ffffff;
+  --g2-bg-muted: #f5f7fa;
+
+  --g2-border-color: #dcdfe6;
+  --g2-border-color-light: #e4e7ed;
+  --g2-fill-light: #f5f7fa;
+  --g2-mask-color: rgb(255 255 255 / 90%);
+}
+
