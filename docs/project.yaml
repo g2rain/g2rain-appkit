@@ -35,6 +35,7 @@ packages:
 documentation:
   entry: docs/README.md
   architecture: docs/architecture/overview.md
+  platformFramework: docs/architecture/platform-framework.md
   packageBoundaries: docs/packages/README.md
   componentBaseline: docs/packages/component-migration-baseline.md
   platformDataComponents: docs/packages/platform-data-components.md
@@ -48,17 +49,18 @@ documentation:
 
 validation:
   status: pilot-integration-in-progress
-  reviewedAt: "2026-09-17"
+  reviewedAt: "2026-09-18"
   readiness:
     libraryPhaseOne: passed
     pilotIntegration: in-progress
     themeUiPilot: closed-by-user-confirmation
-    httpPilot: pending
+    httpPilot: passed
     registryRelease: not-ready
     platformClosedLoop: incomplete
   note: >
     Theme、UI、HTTP、Runtime 首版实现与 Playground 已通过类型检查、测试、构建、制品检查和 npm pack dry-run。
-    g2rain-member-app 已通过 npm pack 安装 @g2rain/theme 与 @g2rain/ui，完成兼容转发与生产构建；
+    g2rain-member-app 已安装四个本地制品包并完成生产构建；
     Theme/UI 按用户 2026-09-17 确认记录为试点闭环，不代表全部联调测试已通过。
-    主题多实例释放、主壳广播、真实页面联调保留为跟踪项。HTTP 切换尚未验收。
+    HTTP 已于 2026-09-18 经用户确认验证通过，member-app 的本地 components/http 已移除，应用装配迁至 runtime/http。
+    主题多实例释放、主壳广播及 Runtime 试点仍保留为跟踪项。
     正式 npm 发布尚未执行。

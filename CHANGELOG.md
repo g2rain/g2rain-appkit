@@ -16,7 +16,7 @@
 - FormData 编码一次复用 boundary 与字节；JSON/URL 编码使用实际 Axios transform 输出。纯签名拒绝未编码的 FormData。
 - 兼容网关 path htu、Result status=0/200、gateway.40002 刷新和 gateway.40001 登录失败。
 - 请求前刷新与响应失败刷新合并；同批失败共享错误和一次通知，通知异常不改变请求结果。
-- Theme/UI 按用户确认记为试点闭环，已知主题及联调事项继续跟踪；HTTP 尚未切换至 Member。
+- Theme/UI 按用户确认记为试点闭环；HTTP 已在 Member 完成制品接入、验证及本地兼容组件清理。
 
 ### `@g2rain/ui`
 
@@ -27,7 +27,8 @@
 
 - 对齐包设计、架构依赖图与当前实现（`http` / `runtime` 互不依赖；平台三组件已进 `@g2rain/ui`）。
 - 补充接入就绪清单、迁移试点示例、根 LICENSE 与各包 README。
-- B 档试点：`g2rain-member-app` 已用 `npm pack` 接入 `@g2rain/theme` + `@g2rain/ui`（兼容转发）；完整 alone/qiankun 联调仍进行中。
+- B 档试点：`g2rain-member-app` 已接入 Theme/UI/HTTP；HTTP 公共内核验证通过并删除本地 `components/http`，应用专属装配迁至 `runtime/http`。Runtime 与平台推广仍进行中。
+- 将统一框架草案调整为 Platform 方案：发布前直接把未发布的 `@g2rain/runtime` 工作包重命名为 `@g2rain/platform`，不保留 Runtime npm 包或兼容入口；Runtime Kernel 降为内部核心，I18n 与 Error Handling 纳入第一阶段标准能力，通过 Host/Theme/UI/I18n/Error Adapter 保持 qiankun、主题、UI 框架和监控实现可替换。
 
 ## [0.1.0] - 2026-09-13
 

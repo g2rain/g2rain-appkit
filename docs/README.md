@@ -8,22 +8,23 @@
 
 ## 当前状态
 
-阶段一库内构建已通过；可用 `npm pack` 启动试点接入；正式 npm 发布与真实 App / qiankun 联调尚未完成。分档门槛见[接入就绪清单](development/integration-readiness.md)。
+阶段一库内构建已通过；Theme/UI 与 HTTP 已在 `g2rain-member-app` 完成试点，其中 HTTP 已删除本地兼容组件目录。Runtime、正式 npm 发布及平台级推广仍未完成。分档门槛见[接入就绪清单](development/integration-readiness.md)。
 
 ## 阅读路径
 
 1. [总体架构](architecture/overview.md)：仓库定位、分层、依赖方向和运行模式。
-2. [主题与微应用协作](architecture/theme-and-micro-app.md)：独立运行与 qiankun 集成模式。
-3. [包设计](packages/README.md)：`theme`、`ui`、`http`、`runtime` 的职责和边界。
-4. [首批组件基准与公开契约](packages/component-migration-baseline.md)：规范来源、兼容 API 和去耦要求。
-5. [平台数据组件与 Provider](packages/platform-data-components.md)：OrganSelect、DictText、StatusSwitch。
-6. [HTTP 与 Runtime 契约](packages/http-runtime-contract.md)：工厂、错误、刷新、消息和生命周期约束。
-7. [仓库与开发约定](development/repository-conventions.md)：workspace、依赖和代码规范。
-8. [构建、制品与测试契约](development/build-and-test-contract.md)：生成代码必须满足的工程配置和输出。
-9. [本地开发与验证](development/local-development.md)：构建、联调和发布前检查。
-10. [接入就绪清单](development/integration-readiness.md)：试点 / 正式发布 / 平台闭环门槛。
-11. [发布流程](release/publishing.md)：版本、制品、发布和回滚策略。
-12. [应用迁移指南](migration/application-migration.md)：现有应用逐步迁移到公共包。
+2. [Platform 统一应用平台方案](architecture/platform-framework.md)：Platform Facade、Runtime Kernel、I18n、错误处理、可替换 Adapter、Preset 和迁移路线。
+3. [主题与微应用协作](architecture/theme-and-micro-app.md)：独立运行与 qiankun 集成模式。
+4. [包设计](packages/README.md)：`theme`、`ui`、`http`、`runtime` 的职责和边界。
+5. [首批组件基准与公开契约](packages/component-migration-baseline.md)：规范来源、兼容 API 和去耦要求。
+6. [平台数据组件与 Provider](packages/platform-data-components.md)：OrganSelect、DictText、StatusSwitch。
+7. [HTTP 与 Runtime 契约](packages/http-runtime-contract.md)：工厂、错误、刷新、消息和生命周期约束。
+8. [仓库与开发约定](development/repository-conventions.md)：workspace、依赖和代码规范。
+9. [构建、制品与测试契约](development/build-and-test-contract.md)：生成代码必须满足的工程配置和输出。
+10. [本地开发与验证](development/local-development.md)：构建、联调和发布前检查。
+11. [接入就绪清单](development/integration-readiness.md)：试点 / 正式发布 / 平台闭环门槛。
+12. [发布流程](release/publishing.md)：版本、制品、发布和回滚策略。
+13. [应用迁移指南](migration/application-migration.md)：现有应用逐步迁移到公共包。
 
 ## 包快速入口
 

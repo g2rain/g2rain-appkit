@@ -36,7 +36,7 @@
 }
 ```
 
-截至 2026-09-13，公开 Registry 查询四个计划包名均返回 `404 Not Found`，表示尚无可见公开版本；这不等同于已经拥有 `@g2rain` scope 的发布权限。首次发布前必须使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限。
+当前公共包尚未正式发布。首次发布前必须重新查询目标包名、使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限；旧的 `@g2rain/runtime` 工作名称不得进入发布清单。
 
 推荐发布顺序：
 
@@ -44,10 +44,10 @@
 npm publish --workspace @g2rain/theme --access public
 npm publish --workspace @g2rain/ui --access public
 npm publish --workspace @g2rain/http --access public
-npm publish --workspace @g2rain/runtime --access public
+npm publish --workspace @g2rain/platform --access public
 ```
 
-`ui` 依赖 `theme` peer；若 `theme` 有新版本，应先发布并确认可从 Registry 获取后再发 `ui`。`http` 与 `runtime` 互不依赖，可在 `theme` 之后并行发布。
+`ui` 依赖 `theme` peer；若 `theme` 有新版本，应先发布并确认可从 Registry 获取后再发 `ui`。`http` 与 `platform` 的 Kernel 不形成硬依赖，可在 `theme` 之后并行发布。执行此命令前必须已完成 `packages/runtime` 到 `packages/platform` 的直接重命名；不得发布 `@g2rain/runtime`。
 
 ## 4. 不兼容变更
 

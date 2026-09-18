@@ -60,6 +60,8 @@ flowchart BT
 - `runtime` 不强制依赖 `theme`；主题 CSS 由应用显式引入，主题 Controller 可选使用。
 - 包之间不得形成循环依赖。
 
+目标架构使用 `@g2rain/platform` 作为业务应用统一入口：轻量 Runtime Kernel 只负责 Context、生命周期和释放，I18n、Error、Theme、Permission、Loading、Message 等以 Capability 接入，qiankun、主题、UI 框架和监控服务通过可替换 Adapter 隔离。由于当前 `@g2rain/runtime` 从未发布，实施时直接重命名现有工作包，最终不保留 Runtime npm 包或兼容入口。该方向目前处于方案阶段，详见 [Platform 统一应用平台方案](platform-framework.md)。
+
 ## 5. 运行模式
 
 ### 独立模式

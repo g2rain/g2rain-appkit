@@ -2,14 +2,14 @@
 
 本文区分库侧能力、试点接入与规模化发布三档门槛，避免把“阶段一构建通过”误判为“可正式推广”。
 
-## 1. 当前状态（2026-09-17）
+## 1. 当前状态（2026-09-18）
 
-Theme/UI 按用户确认记为试点闭环；这是范围验收决定，不将未完成联调勾选为通过。主题多实例释放、主壳广播及真实页面验证继续跟踪；HTTP 单独切换和验收。
+Theme/UI 按用户确认记为试点闭环；HTTP 已在 `g2rain-member-app` 完成制品接入和验证，并删除原 `src/components/http` 兼容目录。应用专属单例、Mock、IAM Key、Loading 组合和刷新协调迁至 `src/runtime/http`，不属于公共包源码副本。Runtime 与平台推广继续单独验收。
 
 | 档位 | 状态 | 说明 |
 | --- | --- | --- |
 | A. 库内阶段一 | 已通过 | 四包实现、Playground、typecheck / test / build / pack:check |
-| B. 试点接入 | Theme/UI 用户确认闭环；HTTP 待接入 | Member 已接入 Theme/UI；联调待验证项仍保留，HTTP 独立验收 |
+| B. 试点接入 | Theme/UI 闭环；HTTP 通过 | Member 已接入 Theme/UI/HTTP；HTTP 本地兼容组件已清理，Runtime 继续验收 |
 | C. 正式 Registry 推广 | 未就绪 | 尚未 npm 发布，未完成真实 App / qiankun 验收 |
 | D. 平台闭环 | 未完成 | 模板 / CLI 未默认依赖；业务仓仍保留本地副本 |
 
@@ -31,6 +31,7 @@ Theme/UI 按用户确认记为试点闭环；这是范围验收决定，不将�
 - [x] 可用 `npm pack` 生成与发布结构一致的 tarball
 - [x] 试点应用（推荐 `g2rain-member-app`）完成 theme + ui 安装与兼容转发
 - [x] 试点应用 typecheck / build 通过
+- [x] `g2rain-member-app` 完成 `@g2rain/http` 接入、运行验证和本地 `components/http` 清理
 - [ ] 独立模式冒烟通过（静态 preview + theme CSS 已验证；登录后列表页待后端）
 - [ ] qiankun 挂载、卸载、重新挂载冒烟通过（生命周期已注入 `G2rainUi`；需 main-shell 联调）
 - [ ] 亮暗主题切换一致（`--g2-*` 已打入产物；主壳主题协作待验收）

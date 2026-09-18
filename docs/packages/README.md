@@ -94,6 +94,8 @@ packages/runtime/src/
 
 每项能力应可独立使用；所有全局监听 API 都应返回释放函数。Runtime 只定义协议和通用实现，具体 Store、消息 Processor 与 qiankun Props 读取仍由应用维护。
 
+Runtime 是当前仓库内尚未发布的工作包。实施目标架构时直接将它重命名为 `@g2rain/platform`：由 Platform Facade 对业务应用提供标准 Preset，Runtime Kernel 只作为内部生命周期核心，并将 I18n 与 Error Handling 纳入首版标准能力。最终不发布 `@g2rain/runtime`，也不保留兼容子路径，详见 [Platform 统一应用平台方案](../architecture/platform-framework.md)。
+
 ## 5. 公开 API 原则
 
 - 消费方只从 `package.json#exports` 声明的入口导入。

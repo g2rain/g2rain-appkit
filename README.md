@@ -2,7 +2,7 @@
 
 ## 当前实现状态
 
-2026-09-17 补充：Theme/UI 按用户确认记录为试点闭环，已知主题多实例和真实联调跟踪项保留。HTTP 已修复签名发送一致性及认证刷新，库内回归验证通过；Member 的 HTTP 切换仍需单独完成。详细配置见 [HTTP 包说明](packages/http/README.md)。
+2026-09-18 补充：Theme/UI 已按确认记录为试点闭环；HTTP 已在 `g2rain-member-app` 完成制品接入、真实验证和本地兼容组件清理，记录为试点通过。应用专属的 Client 注册表、Mock、IAM Key、Loading 组合和刷新协调仍保留在应用 runtime，公共请求内核由 `@g2rain/http` 提供。详细配置见 [HTTP 包说明](packages/http/README.md)。
 
 截至 2026-09-13，npm workspace、四个包目录和 Playground 已建立；`@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/runtime` 均已具备首版实现。Runtime 提供 Loading、Theme、微应用消息 Adapter 与权限 Provider；HTTP 包提供 Axios Client 工厂、语义化参数序列化、标准错误、Token 刷新单航班、DPoP 纯签名与资源释放。`http` 与 `runtime` 互不依赖，由应用组合根装配。Token、登录行为、环境地址和权限数据均由应用注入。类型检查、单元测试、全 workspace 生产构建、制品入口检查和 npm pack dry-run 已通过。
 
@@ -88,6 +88,8 @@ g2rain-appkit/
 | `@g2rain/ui` | 通用 Vue 组件和组合式函数 | 具体应用 Store、路由、业务接口 |
 | `@g2rain/http` | HTTP Client、参数序列化、错误模型、签名和可复用拦截器 | 应用环境读取、具体 Token Store、业务 Mock 数据 |
 | `@g2rain/runtime` | 权限插件、Loading 协调、微应用通信、主题切换和应用能力装配 | 业务页面和领域 API |
+
+目标架构将当前未发布的 `@g2rain/runtime` 工作包直接重命名为 `@g2rain/platform`，作为业务应用统一入口，并将 Runtime 降为内部 Kernel 概念。Platform 首版标准能力包含 I18n 和 Error Handling；最终不发布 Runtime 包，也不提供兼容入口。详见 [`docs/architecture/platform-framework.md`](docs/architecture/platform-framework.md)。
 
 ## 4. 仓库与 npm workspace 配置
 
@@ -498,8 +500,9 @@ npm publish --workspace @g2rain/ui --access public
 1. 将 HTTP 代码拆分为纯通用能力和应用装配代码。
 2. 发布 `@g2rain/http`。
 3. 抽取权限、Loading、微应用通信和主题运行时。
-4. 发布 `@g2rain/runtime`。
-5. 逐个应用迁移，保留必要的兼容适配层。
+4. 发布前将未发布的 `packages/runtime` 直接重命名为 `packages/platform`，同步包名、导入和文档，不建立 Runtime 兼容包。
+5. 发布 `@g2rain/platform`。
+6. 逐个应用迁移；应用内部可以短期保留组合适配，但不得依赖或发布 `@g2rain/runtime`。
 
 ## 11. 兼容与回滚策略
 
@@ -546,4 +549,4 @@ export {
 3. 公共 UI 使用 G2rain 语义变量，不直接硬编码品牌颜色。
 4. 应用 Store、业务 API 和路由不进入公共 UI 包。
 5. 主应用管理集成模式主题，子应用兼容独立运行。
-6. 优先小范围迁移并发布，再逐步抽取 HTTP 和 Runtime，避免一次性重构。
+6. 优先小范围迁移并发布，再逐步抽取 HTTP 和 Platform，避免一次性重构。
