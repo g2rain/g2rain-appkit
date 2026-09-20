@@ -37,42 +37,53 @@
 | `StatusSwitch` | 直接依赖 Locale、i18n 和字典更新 API |
 | `UserSelect` | 当前仅 Department 存在，属于用户领域适配 |
 
-OrganSelect、DictText、StatusSwitch 已进入 `@g2rain/ui`，通过数据 Provider 和回调隔离应用依赖；UserSelect 尚待后续实现。
+OrganSelect、DictSelect、DictText、StatusSwitch 从 `@g2rain/ui/platform` 导出，通过数据 Provider 和回调隔离应用依赖；UserSelect 尚待后续实现。
 
 ## 3. UI 能力注入
 
-公共组件不能依赖全局 `$t`、Pinia 或具体 i18n 实例。`@g2rain/ui` 导出以下插件契约：
+公共组件不能依赖全局 `$t`、Pinia 或具体 i18n 实例。`@g2rain/ui` 只导出通用插件契约：
 
 ```ts
 import type { App, InjectionKey } from 'vue'
-import type { G2rainDataProviders } from '@g2rain/ui'
 
 export type G2rainTranslator = (key: string, fallback: string) => string
 
 export interface G2rainUiOptions {
   translate?: G2rainTranslator
   locale?: () => string | undefined
-  dataProviders?: G2rainDataProviders
-  onMissingProvider?: (name: 'organ' | 'dict') => void
 }
 
 export interface G2rainUiContext {
   translate: G2rainTranslator
   locale?: () => string | undefined
-  dataProviders?: G2rainDataProviders
-  onMissingProvider?: (name: 'organ' | 'dict') => void
 }
 
 export const G2RAIN_UI_CONTEXT: InjectionKey<G2rainUiContext>
 export const G2rainUi: { install(app: App, options?: G2rainUiOptions): void }
 ```
 
-默认 Translator 返回 `fallback`。应用在组合根注入 i18n、语言与平台数据能力：
+组织、字典和状态的数据 Provider 从 `@g2rain/ui/platform` 注入，不进入根插件：
 
 ```ts
+import type { G2rainDataProviders } from '@g2rain/ui/platform'
+
+export interface G2rainPlatformUiOptions {
+  dataProviders?: G2rainDataProviders
+  onMissingProvider?: (name: 'organ' | 'dict') => void
+}
+```
+
+默认 Translator 返回 `fallback`。应用在组合根分别注入通用能力和平台数据：
+
+```ts
+import { G2rainUi } from '@g2rain/ui'
+import { G2rainPlatformUi } from '@g2rain/ui/platform'
+
 app.use(G2rainUi, {
   translate: (key, fallback) => t(key, fallback),
   locale: () => localeStore.locale,
+})
+app.use(G2rainPlatformUi, {
   dataProviders: {
     organ: {
       loadOptions: params => organApi.select(params),
@@ -89,7 +100,7 @@ app.use(G2rainUi, {
 })
 ```
 
-`dataProviders` 与平台组件行为见[平台数据组件](platform-data-components.md)。公共组件内部通过 `useG2rainUi()` 读取上下文。`useG2rainUi()` 未安装插件时必须返回默认上下文，按需导入组件不能因此报错。
+`dataProviders` 与平台组件行为见[平台数据组件](platform-data-components.md)。通用组件通过 `useG2rainUi()` 读取语言。`useG2rainUi()` 未安装插件时必须返回默认上下文，按需导入组件不能因此报错。平台组件通过 `useG2rainPlatformUi()` 读取 Provider；未安装时不发请求。
 ## 4. QueryForm 契约
 
 第一版保持现有公开行为：

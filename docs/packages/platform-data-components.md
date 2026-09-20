@@ -1,15 +1,18 @@
 # 平台数据组件与 Provider
 
-OrganSelect、DictText、StatusSwitch 现统一进入 `@g2rain/ui`。组织、字典、用户属于可共享的平台概念；具体 API、Token、权限范围与缓存通过应用装配。当前交付前三个组件，UserSelect 后续沿用 EntityDataProvider，尚未实现。
+OrganSelect、DictSelect、DictText、StatusSwitch 从 `@g2rain/ui/platform` 导入，不进入 `@g2rain/ui` 根入口。组织、字典和状态带有 G2rain 默认字段与行为；具体 API、Token、权限范围与缓存通过 `G2rainPlatformUi` 装配。通用 `QueryForm`、`RemoteSelect` 仍从根入口导入。当前交付这四个组件，UserSelect 后续沿用 EntityDataProvider，尚未实现。
 
 ## 应用入口
 
 ```ts
 import { G2rainUi } from '@g2rain/ui'
+import { G2rainPlatformUi } from '@g2rain/ui/platform'
 
 app.use(G2rainUi, {
   locale: () => localeStore.locale,
   translate: (key, fallback) => t(key, fallback),
+})
+app.use(G2rainPlatformUi, {
   // 应用可仅在开发环境提供诊断回调。
   onMissingProvider: name => console.warn(`Missing ${name} provider`),
   dataProviders: {
@@ -35,11 +38,17 @@ app.use(G2rainUi, {
 ## 使用方式
 
 ```vue
-<OrganSelect v-model="form.organId" />
-<DictText :value="row.status" usage-code="member_status" />
-<StatusSwitch v-model="row.status" :disabled="!canEdit"
-  :api-method="({ nextValue }) => memberApi.updateStatus(row.id, nextValue)"
-  @error="showUpdateError" />
+<script setup lang="ts">
+import { OrganSelect, DictText, StatusSwitch } from '@g2rain/ui/platform'
+</script>
+
+<template>
+  <OrganSelect v-model="form.organId" />
+  <DictText :value="row.status" usage-code="member_status" />
+  <StatusSwitch v-model="row.status" :disabled="!canEdit"
+    :api-method="({ nextValue }) => memberApi.updateStatus(row.id, nextValue)"
+    @error="showUpdateError" />
+</template>
 ```
 
 OrganSelect 保留数值 ID、organId/organName 默认字段、200px 宽度、300ms 防抖、prefetchOnOpen=true，以及 update:modelValue/change/clear。支持 apiMethod、query、defaultValue、clearable、autoSelectFirstWhenEmpty，显式 Props 优先于 Provider；默认无策略时允许清空、不自动选择。搜索和数值 ID 回显复用 RemoteSelect，语言或 query 变化清除本组件选项缓存。提供 focus/openDropdown。组织加载错误通过 error 发出。

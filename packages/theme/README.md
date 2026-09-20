@@ -18,7 +18,7 @@ import '@g2rain/theme/styles.css'
 
 按需入口：`./tokens.css`、`./base.css`、`./element-plus.css`、`./light.css`、`./dark.css`。
 
-主题 DOM 切换使用 `@g2rain/runtime/theme` 的 `createThemeController`，不在本包。
+主题 DOM 切换使用 `@g2rain/platform/theme` 的 `createThemeController`，不在本包。
 
 ## Docs
 

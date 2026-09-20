@@ -1,4 +1,7 @@
-export type G2rainTheme = 'light' | 'dark'
+import type { G2rainTheme, RuntimeContext } from '../contract/context.js'
+import type { RuntimeCapability } from '../sub/types.js'
+
+export type { G2rainTheme } from '../contract/context.js'
 
 export interface ThemeController {
   getTheme(): G2rainTheme
@@ -36,6 +39,39 @@ export function createThemeController(options: {
     dispose() {
       disposed = true
       listeners.clear()
+    },
+  }
+}
+
+export function createThemeCapability(options: {
+  controller?: ThemeController
+  root?: HTMLElement
+  persist?: (theme: G2rainTheme) => void | Promise<void>
+} = {}): RuntimeCapability {
+  let owned: ThemeController | undefined
+
+  function apply(context: Readonly<RuntimeContext>) {
+    if (context.mode !== 'standalone' || !context.theme) return
+    const theme = context.theme
+    const controller = options.controller ?? (owned ??= createThemeController({
+      root: options.root,
+      initialTheme: theme,
+      persist: options.persist,
+    }))
+    controller.setTheme(theme)
+  }
+
+  return {
+    id: 'theme',
+    mount(input) {
+      apply(input.context)
+    },
+    update(input) {
+      apply(input.context)
+    },
+    dispose() {
+      owned?.dispose()
+      owned = undefined
     },
   }
 }

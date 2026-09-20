@@ -7,6 +7,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 import { ElSwitch } from 'element-plus'
 import { useG2rainUi } from '../context'
+import { useG2rainPlatformUi } from './provide'
 import type { DictLoader } from '../platform-data'
 import { useDictOptions } from './useDictOptions'
 type StatusValue = string | number | boolean
@@ -31,12 +32,13 @@ const emit = defineEmits<{
   'load-error': [error: unknown]
 }>()
 const ui = useG2rainUi()
+const platform = useG2rainPlatformUi()
 const loading = ref(false)
 let disposed = false
 onBeforeUnmount(() => { disposed = true })
 const { items } = useDictOptions(() => ({
   options: props.options?.map(item => ({ code: item.value, name: item.label })),
-  loader: props.fetchOptions ?? ui.dataProviders?.dict?.loadOptions,
+  loader: props.fetchOptions ?? platform.dataProviders?.dict?.loadOptions,
   params: { usageCode: props.usageCode, dictCode: props.dictCode, locale: ui.locale?.() },
   enabled: Boolean(props.usageCode || props.dictCode),
 }), error => emit('load-error', error))

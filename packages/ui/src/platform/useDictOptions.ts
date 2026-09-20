@@ -1,5 +1,5 @@
 import { ref, watchEffect } from 'vue'
-import { useG2rainUi } from '../context'
+import { useG2rainPlatformUi } from './provide'
 import type { DictLoader, DictQuery } from '../platform-data'
 import type { RemoteSelectOption } from '../remote-select/types'
 
@@ -10,7 +10,7 @@ export function useDictOptions(source: () => {
   enabled: boolean
 }, onError: (error: unknown) => void) {
   const items = ref<readonly RemoteSelectOption[]>([])
-  const ui = useG2rainUi()
+  const platform = useG2rainPlatformUi()
   const loading = ref(false)
   watchEffect(onCleanup => {
     const state = source()
@@ -20,7 +20,7 @@ export function useDictOptions(source: () => {
     loading.value = false
     if (state.options !== undefined || !state.enabled) return
     if (!state.loader) {
-      ui.onMissingProvider?.('dict')
+      platform.onMissingProvider?.('dict')
       return
     }
     loading.value = true

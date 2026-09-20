@@ -4,7 +4,7 @@
 
 每个应用独立选择迁移时间。一次迁移一个能力域，并保持名称、Props、事件和行为尽可能不变。推荐以 `g2rain-member-app` 作为首个试点。
 
-在正式 Registry 版本可用前，试点应用应使用 `npm pack` 产物安装，不以 `npm link` 作为验收依据。接入门槛见[接入就绪清单](../development/integration-readiness.md)。
+在正式 Registry 版本可用前，试点应用应使用 `npm pack` 产物安装，不以 `npm link` 作为验收依据。接入门槛见[接入就绪清单](../development/integration-readiness.md)。Main Shell 与子应用的生命周期改造见[开发手册](../development/platform-handbook.md)，不在本指南里重复。
 
 ## 2. 迁移顺序
 
@@ -13,11 +13,11 @@ flowchart LR
   Theme[接入 theme] --> UI[迁移基础 UI]
   UI --> Platform[接入平台数据组件]
   Platform --> HTTP[迁移 HTTP 基础能力]
-  HTTP --> Runtime[接入 runtime]
-  Runtime --> Cleanup[删除兼容层]
+  HTTP --> Platform[接入 platform]
+  Platform --> Cleanup[删除兼容层]
 ```
 
-主题先行，让后续公共组件直接使用统一变量；平台数据组件依赖 `G2rainUi` Provider；HTTP 和 runtime 涉及认证及全局状态，在 UI 稳定后迁移。
+主题先行，让后续公共组件直接使用统一变量；平台数据组件依赖 `G2rainPlatformUi` Provider；HTTP 和 Platform 涉及认证及全局状态，在 UI 稳定后迁移。
 
 ## 3. 单个能力的迁移步骤
 
@@ -28,7 +28,7 @@ flowchart LR
 4. 通过 `npm pack` 在试点应用安装制品。
 5. 必要时保留本地兼容转发，维持原导入路径。
 6. 完成类型检查、生产构建及两种运行模式验证。
-7. 发布公共包并锁定合适版本范围。
+7. 回写 Member 验证结论；仅在 Appkit 整体验证通过并正式发布后，锁定 Registry 版本范围。
 8. 删除已无调用的本地源码副本。
 
 ## 4. 试点最小接入示例
@@ -54,10 +54,13 @@ npm install ../g2rain-appkit/g2rain-ui-0.1.0.tgz
 import '@g2rain/theme/styles.css'
 import '@g2rain/ui/style.css'
 import { G2rainUi } from '@g2rain/ui'
+import { G2rainPlatformUi } from '@g2rain/ui/platform'
 
 app.use(G2rainUi, {
   translate: (key, fallback) => t(key, fallback),
   locale: () => localeStore.locale,
+})
+app.use(G2rainPlatformUi, {
   dataProviders: {
     organ: {
       loadOptions: params => organApi.select(params),
@@ -95,11 +98,13 @@ export {
 export {
   RemoteSelect,
   ApiSelect,
+} from '@g2rain/ui'
+export {
   DictSelect,
   OrganSelect,
   DictText,
   StatusSwitch,
-} from '@g2rain/ui'
+} from '@g2rain/ui/platform'
 ```
 
 验证通过后再删除被转发的本地 `.vue` / `.ts` 实现文件。同一应用不得同时注册两套同名全局组件。
@@ -120,13 +125,13 @@ const { client, dispose } = createHttpClient({
 
 Client 单例表、Mock、环境 URL、与 Loading 的联动仍由应用维护。qiankun 卸载时调用 `dispose()`。
 
-### 4.5 Runtime 按能力接入
+### 4.5 Platform 按能力接入
 
 ```ts
-import { createThemeController } from '@g2rain/runtime/theme'
-import { createBrowserEventAdapter } from '@g2rain/runtime/micro-app'
-import { createPermissionPlugin } from '@g2rain/runtime/permission'
-import { createLoadingController } from '@g2rain/runtime/loading'
+import { createThemeController } from '@g2rain/platform/theme'
+import { createBrowserEventAdapter } from '@g2rain/platform/micro-app'
+import { createPermissionPlugin } from '@g2rain/platform/permission/vue'
+import { createLoadingController } from '@g2rain/platform/loading'
 
 const theme = createThemeController()
 const events = createBrowserEventAdapter()
@@ -158,11 +163,11 @@ loading.dispose()
 ### UI
 
 - 优先迁移 `QueryForm`、`TableSort` 和 `RemoteSelect`。
-- 再迁移 `OrganSelect`、`DictText`、`StatusSwitch`，并按[平台数据组件](../packages/platform-data-components.md)注入 Provider。
+- 再迁移 `OrganSelect`、`DictSelect`、`DictText`、`StatusSwitch`，并从 `@g2rain/ui/platform` 导入，按[平台数据组件](../packages/platform-data-components.md)注入 `G2rainPlatformUi`。
 - StatusSwitch 已改为“成功后更新”，且不再自动 `ElMessage`；应用需自行处理 success/error 提示。
 - 对照原组件验证 Props、事件、Slots、空状态和错误状态。
 
-### HTTP 与 Runtime
+### HTTP 与 Platform
 
 - 先区分纯 HTTP 能力与应用装配代码。
 - 将环境、Token、刷新、语言和登录失败处理注入 Client 工厂。

@@ -26,7 +26,7 @@ g2rain-appkit/
 │  ├─ theme/       # 设计变量、主题和基础样式
 │  ├─ ui/          # 通用 Vue 组件与组合式函数
 │  ├─ http/        # HTTP Client、错误与拦截器
-│  └─ runtime/     # 权限、Loading、主题和微应用协议
+│  └─ platform/    # Main/Sub 协议、生命周期与可选能力
 ├─ examples/
 │  └─ playground/  # 公共包组合验证
 └─ docs/           # 架构、开发、发布和迁移文档
@@ -39,7 +39,7 @@ flowchart BT
   Theme["@g2rain/theme"]
   UI["@g2rain/ui"]
   HTTP["@g2rain/http"]
-  Runtime["@g2rain/runtime"]
+  Runtime["@g2rain/platform"]
   App[业务应用]
 
   UI --> Theme
@@ -52,15 +52,15 @@ flowchart BT
 约束：
 
 - `theme` 位于依赖底层，不依赖 Vue、Pinia 或 qiankun。
-- `theme` 是 CSS-only 包；DOM 主题切换和订阅属于 `runtime/theme`。
+- `theme` 是 CSS-only 包；DOM 主题切换和订阅属于 `platform/theme`。
 - `ui` 以 peer 依赖声明 `@g2rain/theme`，但不能依赖业务应用。
 - `http` 不读取应用环境变量，不持有具体 Token Store。
-- `runtime` 定义通用协议和装配能力，不包含业务页面或领域 API。
-- `http` 与 `runtime` 互不依赖；应用在组合根按需装配两者。
-- `runtime` 不强制依赖 `theme`；主题 CSS 由应用显式引入，主题 Controller 可选使用。
+- `platform` 定义 Main/Sub 共享协议和装配能力，不包含业务页面、领域 API 或 Main Shell Store。
+- `http` 与 `platform` 互不依赖；应用在组合根按需装配两者。
+- `platform` 不强制依赖 `theme`；主题 CSS 由应用显式引入，主题 Controller 可选使用。
 - 包之间不得形成循环依赖。
 
-目标架构使用 `@g2rain/platform` 作为业务应用统一入口：轻量 Runtime Kernel 只负责 Context、生命周期和释放，I18n、Error、Theme、Permission、Loading、Message 等以 Capability 接入，qiankun、主题、UI 框架和监控服务通过可替换 Adapter 隔离。由于当前 `@g2rain/runtime` 从未发布，实施时直接重命名现有工作包，最终不保留 Runtime npm 包或兼容入口。该方向目前处于方案阶段，详见 [Platform 统一应用平台方案](platform-framework.md)。
+目标架构使用 `@g2rain/platform` 作为“前端应用运行与主子应用协作 SDK”的总称。包根只导出 Main/Sub 共享类型和协议，`/sub` 提供框架无关的实例生命周期与 Scope，`/main` 提供协调端口；目标身份模型为 `MicroAppDefinition → WorkspaceView → RuntimeInstance → RuntimeAdapter 私有 handle`。Main Shell 继续拥有 Workspace、RuntimeStore、实例队列和具体框架 handle，业务应用继续拥有 Vue、Pinia、Router、qiankun lifecycle 和独立启动逻辑。未发布的旧工作包已直接改名为 `@g2rain/platform`，不保留兼容入口。当前先在 Member 与 Main Shell 完成整体验证，再决定发布；库内实现不构成 npm 发布承诺。详见 [Platform 前端应用运行与主子协作方案](platform-framework.md)。
 
 ## 5. 运行模式
 

@@ -11,7 +11,7 @@
 
 建立以用途命名的 `--g2-*` CSS 语义变量。公共组件只消费这些变量；Element Plus 变量由单独适配层映射。
 
-主题包保持 CSS-only，默认 `styles.css` 同时发布亮色与暗色选择器。修改 `data-g2-theme`、持久化和订阅等浏览器行为由 `@g2rain/runtime/theme` 承担。
+主题包保持 CSS-only，默认 `styles.css` 同时发布亮色与暗色选择器。修改 `data-g2-theme`、持久化和订阅等浏览器行为由 `@g2rain/platform/theme` 承担。
 
 ## 结果
 

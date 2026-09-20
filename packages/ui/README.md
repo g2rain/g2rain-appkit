@@ -13,11 +13,14 @@ npm install @g2rain/ui @g2rain/theme
 ```ts
 import '@g2rain/theme/styles.css'
 import '@g2rain/ui/style.css'
-import { G2rainUi, QueryForm, OrganSelect } from '@g2rain/ui'
+import { G2rainUi, QueryForm } from '@g2rain/ui'
+import { G2rainPlatformUi, OrganSelect } from '@g2rain/ui/platform'
 
 app.use(G2rainUi, {
   translate: (key, fallback) => t(key, fallback),
   locale: () => localeStore.locale,
+})
+app.use(G2rainPlatformUi, {
   dataProviders: {
     organ: { loadOptions: params => organApi.select(params) },
     dict: { loadOptions: params => dictService.select(params) },
@@ -25,7 +28,9 @@ app.use(G2rainUi, {
 })
 ```
 
-主要导出：`QueryForm`、`SortableTable`、`TableColumn`、`RemoteSelect`、`ApiSelect`、`DictSelect`、`OrganSelect`、`DictText`、`StatusSwitch`。
+主要导出：`QueryForm`、`SortableTable`、`TableColumn`、`RemoteSelect`、`ApiSelect`。
+
+组织、字典和状态组件从 `@g2rain/ui/platform` 导入：`OrganSelect`、`DictSelect`、`DictText`、`StatusSwitch`、`G2rainPlatformUi`。
 
 ## Docs
 

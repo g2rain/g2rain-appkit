@@ -11,6 +11,7 @@ import RemoteSelect from '../remote-select/RemoteSelect.vue'
 import type { RemoteSelectExpose, RemoteSelectValue } from '../remote-select/types'
 import type { EntityDataProvider } from '../platform-data'
 import { useG2rainUi } from '../context'
+import { useG2rainPlatformUi } from './provide'
 const props = withDefaults(defineProps<{
   modelValue?: number | null
   apiMethod?: EntityDataProvider['loadOptions']
@@ -28,18 +29,19 @@ const props = withDefaults(defineProps<{
 }>(), { clearable: undefined, autoSelectFirstWhenEmpty: undefined, valueKey: 'organId', labelKey: 'organName', width: '200px', debounceDelay: 300, prefetchOnOpen: true })
 const emit = defineEmits<{ 'update:modelValue': [value: number | null | undefined]; change: [value: number | null | undefined]; clear: []; error: [error: unknown] }>()
 const ui = useG2rainUi()
+const platform = useG2rainPlatformUi()
 const select = ref<RemoteSelectExpose>()
 const dataVersion = ref(0)
-watch(() => [props.apiMethod, props.query, ui.locale?.(), ui.dataProviders?.organ?.loadOptions], () => { dataVersion.value++ }, { deep: true })
-const policy = computed(() => ui.dataProviders?.organ?.getPolicy?.() ?? {})
+watch(() => [props.apiMethod, props.query, ui.locale?.(), platform.dataProviders?.organ?.loadOptions], () => { dataVersion.value++ }, { deep: true })
+const policy = computed(() => platform.dataProviders?.organ?.getPolicy?.() ?? {})
 const normalize = (value: RemoteSelectValue) => value == null ? value : Number.isFinite(Number(value)) ? Number(value) : null
 watch(() => [props.modelValue, props.defaultValue ?? policy.value.defaultValue] as const, ([current, fallback]) => {
   if (current == null && fallback != null) { emit('update:modelValue', fallback); emit('change', fallback) }
 }, { immediate: true })
 const fetchData: EntityDataProvider['loadOptions'] = async params => {
-  const loader = props.apiMethod ?? ui.dataProviders?.organ?.loadOptions
+  const loader = props.apiMethod ?? platform.dataProviders?.organ?.loadOptions
   if (!loader) {
-    ui.onMissingProvider?.('organ')
+    platform.onMissingProvider?.('organ')
     return []
   }
   try { return await loader({ ...params, query: props.query, locale: ui.locale?.() }) }

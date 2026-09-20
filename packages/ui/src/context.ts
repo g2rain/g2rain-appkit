@@ -1,21 +1,16 @@
 import type { App, InjectionKey } from 'vue'
 import { inject } from 'vue'
-import type { G2rainDataProviders } from './platform-data'
 
 export type G2rainTranslator = (key: string, fallback: string) => string
 
 export interface G2rainUiOptions {
   translate?: G2rainTranslator
   locale?: () => string | undefined
-  dataProviders?: G2rainDataProviders
-  onMissingProvider?: (name: 'organ' | 'dict') => void
 }
 
 export interface G2rainUiContext {
   translate: G2rainTranslator
   locale?: () => string | undefined
-  dataProviders?: G2rainDataProviders
-  onMissingProvider?: (name: 'organ' | 'dict') => void
 }
 
 const defaultContext: G2rainUiContext = {
@@ -31,8 +26,6 @@ export const G2rainUi = {
     app.provide(G2RAIN_UI_CONTEXT, {
       translate: options.translate ?? defaultContext.translate,
       locale: options.locale,
-      dataProviders: options.dataProviders,
-      onMissingProvider: options.onMissingProvider,
     })
   },
 }

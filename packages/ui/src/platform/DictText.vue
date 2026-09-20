@@ -4,6 +4,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useG2rainUi } from '../context'
+import { useG2rainPlatformUi } from './provide'
 import type { DictLoader } from '../platform-data'
 import type { RemoteSelectOption } from '../remote-select/types'
 import { useDictOptions } from './useDictOptions'
@@ -19,9 +20,10 @@ const props = withDefaults(defineProps<{
 }>(), { valueKey: 'code', labelKey: 'name', placeholder: '-' })
 const emit = defineEmits<{ error: [error: unknown] }>()
 const ui = useG2rainUi()
+const platform = useG2rainPlatformUi()
 const { items, loading } = useDictOptions(() => ({
   options: props.options,
-  loader: props.apiMethod ?? ui.dataProviders?.dict?.loadOptions,
+  loader: props.apiMethod ?? platform.dataProviders?.dict?.loadOptions,
   enabled: props.value != null && props.value !== '',
   params: { code: typeof props.value === 'boolean' || props.value == null ? undefined : String(props.value).trim(), usageCode: props.usageCode, dictCode: props.dictCode, locale: ui.locale?.() },
 }), error => emit('error', error))

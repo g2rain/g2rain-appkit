@@ -68,17 +68,19 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue'
-import { createThemeController } from '@g2rain/runtime/theme'
+import { createThemeController } from '@g2rain/platform/theme'
 import {
   QueryForm,
-  OrganSelect,
-  DictText,
-  StatusSwitch,
   RemoteSelect,
   SortableTable,
   SortManagerButton,
   TableColumn,
 } from '@g2rain/ui'
+import {
+  OrganSelect,
+  DictText,
+  StatusSwitch,
+} from '@g2rain/ui/platform'
 import type {
   FetchDataFunction,
   QueryFormData,

@@ -36,7 +36,7 @@
 }
 ```
 
-当前公共包尚未正式发布。首次发布前必须重新查询目标包名、使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限；旧的 `@g2rain/runtime` 工作名称不得进入发布清单。
+当前公共包尚未正式发布，且不会在 Member 整体验证完成前发布任何 `@g2rain/*` 包。验证期间仅使用 `npm pack` 制品；Theme/UI/HTTP 的局部试点结论不单独触发发布。首次发布前必须重新查询目标包名、使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限。发布清单只包含 `@g2rain/platform`，不得包含已删除的旧工作包名。
 
 推荐发布顺序：
 
@@ -47,7 +47,7 @@ npm publish --workspace @g2rain/http --access public
 npm publish --workspace @g2rain/platform --access public
 ```
 
-`ui` 依赖 `theme` peer；若 `theme` 有新版本，应先发布并确认可从 Registry 获取后再发 `ui`。`http` 与 `platform` 的 Kernel 不形成硬依赖，可在 `theme` 之后并行发布。执行此命令前必须已完成 `packages/runtime` 到 `packages/platform` 的直接重命名；不得发布 `@g2rain/runtime`。
+仅当 Member 的独立运行、qiankun 集成、主子协作及整体验收全部通过后，才执行上述发布顺序。`ui` 依赖 `theme` peer；若 `theme` 有新版本，应先发布并确认可从 Registry 获取后再发 `ui`。`http` 与 `platform` 的 Kernel 不形成硬依赖，可在 `theme` 之后并行发布。`packages/platform` 已是唯一运行时包目录，发布清单不得加入已删除的旧工作包名。
 
 ## 4. 不兼容变更
 

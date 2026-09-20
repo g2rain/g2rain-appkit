@@ -127,12 +127,14 @@ packages/theme/src/
 
 `@g2rain/ui` 使用 Vite Library Mode：
 
-- 入口：`src/index.ts`。
+- 入口：`src/index.ts` 与 `src/platform/index.ts`。
 - 格式：仅 ESM。
-- JavaScript：`dist/index.js`。
+- JavaScript：`dist/index.js`、`dist/platform/index.js`。
 - 样式：`dist/style.css`。
-- 类型：`dist/index.d.ts` 及其引用的声明文件。
+- 类型：`dist/index.d.ts`、`dist/platform/index.d.ts` 及其引用的声明文件。
 - `cssCodeSplit`：关闭，确保得到稳定的单一 `style.css`。
+
+根入口只包含通用组件。组织、字典和状态组件只从 `./platform` 导出。
 
 Vite 配置的关键部分固定为：
 
@@ -146,9 +148,12 @@ export default defineConfig({
   build: {
     cssCodeSplit: false,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'platform/index': resolve(__dirname, 'src/platform/index.ts'),
+      },
       formats: ['es'],
-      fileName: 'index',
+      fileName: (_format, entryName) => `${entryName}.js`,
       cssFileName: 'style',
     },
     rollupOptions: {
@@ -191,24 +196,31 @@ element-plus
 
 ## 6. HTTP 与 Runtime 构建
 
-`@g2rain/http` 和 `@g2rain/runtime` 同样使用 Vite Library Mode，输出 ESM `dist/index.js` 和声明文件。
+`@g2rain/http` 和 `@g2rain/platform` 同样使用 Vite Library Mode，输出 ESM `dist/index.js` 和声明文件。
 
 依赖策略：
 
 | 包 | 普通 dependencies | peerDependencies / external |
 | --- | --- | --- |
 | `http` | `axios`、`jose`、`js-sha256` 等由包直接使用的库 | 无宿主框架依赖 |
-| `runtime` | `@g2rain/http` | `vue`、`element-plus`；未启用 UI 能力时允许通过子路径避免加载对应模块 |
+| `platform` | 无 | `vue`（仅 `./permission/vue`，可选）；`vue-i18n`（仅 `./i18n/vue-i18n`，可选）；包根、`/main`、`/sub`、`/permission`、`/i18n`、`/error`、`/http` 不导入 Vue，也不导入 `@g2rain/http` |
 
 普通 dependency 也保持 external，由 npm 安装解析，避免把第三方库重复内联到每个公共包制品。Runtime 必须使用明确子路径导出，使纯消息能力不会因为根入口而加载 Vue 或 Element Plus。
 
 首批子路径至少预留：
 
 ```text
-@g2rain/runtime/theme
-@g2rain/runtime/micro-app
-@g2rain/runtime/permission
-@g2rain/runtime/loading
+@g2rain/platform/theme
+@g2rain/platform/micro-app
+@g2rain/platform/permission
+@g2rain/platform/permission/vue
+@g2rain/platform/loading
+@g2rain/platform/sub
+@g2rain/platform/main
+@g2rain/platform/i18n
+@g2rain/platform/i18n/vue-i18n
+@g2rain/platform/error
+@g2rain/platform/http
 ```
 
 Runtime 使用多入口构建，入口名称与 `exports` 路径保持一致：

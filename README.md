@@ -4,9 +4,9 @@
 
 2026-09-18 补充：Theme/UI 已按确认记录为试点闭环；HTTP 已在 `g2rain-member-app` 完成制品接入、真实验证和本地兼容组件清理，记录为试点通过。应用专属的 Client 注册表、Mock、IAM Key、Loading 组合和刷新协调仍保留在应用 runtime，公共请求内核由 `@g2rain/http` 提供。详细配置见 [HTTP 包说明](packages/http/README.md)。
 
-截至 2026-09-13，npm workspace、四个包目录和 Playground 已建立；`@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/runtime` 均已具备首版实现。Runtime 提供 Loading、Theme、微应用消息 Adapter 与权限 Provider；HTTP 包提供 Axios Client 工厂、语义化参数序列化、标准错误、Token 刷新单航班、DPoP 纯签名与资源释放。`http` 与 `runtime` 互不依赖，由应用组合根装配。Token、登录行为、环境地址和权限数据均由应用注入。类型检查、单元测试、全 workspace 生产构建、制品入口检查和 npm pack dry-run 已通过。
+截至 2026-09-19，npm workspace、四个包目录和 Playground 已建立。`@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/platform` 均已具备首版实现。Platform 提供共享契约、Sub 生命周期 Kernel、Loading、Theme、微应用消息 Adapter 与权限 Provider；HTTP 包提供 Axios Client 工厂、语义化参数序列化、标准错误、Token 刷新单航班、DPoP 纯签名与资源释放。`http` 与 `platform` 互不依赖，由应用组合根装配。Token、登录行为、环境地址和权限数据均由应用注入。
 
-接入分档：库内阶段一已通过；可用 `npm pack` 启动 `g2rain-member-app` 试点；正式 npm 发布与真实 App / qiankun 联调尚未执行。详见 [`docs/development/integration-readiness.md`](docs/development/integration-readiness.md) 与 [`CHANGELOG.md`](CHANGELOG.md)。
+接入分档：库内阶段一已通过，当前统一处于 `g2rain-member-app` 验证期。Theme/UI/HTTP 的局部试点结论不等同于 Appkit 可发布；必须完成 Member 独立运行、qiankun 集成及 Platform 主子协作的整体验证，才会发布任何 `@g2rain/*` 包。验证期仅使用 `npm pack` 制品，不发布到 npm Registry。详见 [`docs/development/integration-readiness.md`](docs/development/integration-readiness.md) 与 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 1. 背景
 
@@ -62,12 +62,12 @@ g2rain-appkit/
 │  ├─ theme/
 │  ├─ ui/
 │  ├─ http/
-│  └─ runtime/
+│  └─ platform/
 └─ examples/
    └─ playground/
 ```
 
-包之间采用单向依赖；`http` 与 `runtime` 并行，不形成包级硬依赖：
+包之间采用单向依赖；`http` 与 `platform` 并行，不形成包级硬依赖：
 
 ```text
 @g2rain/theme
@@ -76,7 +76,7 @@ g2rain-appkit/
       ↑
 业务应用 / g2rain-app-template
 
-@g2rain/http  ←── 业务应用 ──→  @g2rain/runtime
+@g2rain/http  ←── 业务应用 ──→  @g2rain/platform
                                    （主题 CSS 由应用显式引入 theme）
 ```
 
@@ -87,9 +87,9 @@ g2rain-appkit/
 | `@g2rain/theme` | 设计变量、亮暗主题、Element Plus 变量映射、基础样式 | Vue、Pinia、业务 API、qiankun |
 | `@g2rain/ui` | 通用 Vue 组件和组合式函数 | 具体应用 Store、路由、业务接口 |
 | `@g2rain/http` | HTTP Client、参数序列化、错误模型、签名和可复用拦截器 | 应用环境读取、具体 Token Store、业务 Mock 数据 |
-| `@g2rain/runtime` | 权限插件、Loading 协调、微应用通信、主题切换和应用能力装配 | 业务页面和领域 API |
+| `@g2rain/platform` | 共享契约、Sub 生命周期、权限插件、Loading 协调、微应用通信、主题切换 | 业务页面、领域 API、Main Shell Store |
 
-目标架构将当前未发布的 `@g2rain/runtime` 工作包直接重命名为 `@g2rain/platform`，作为业务应用统一入口，并将 Runtime 降为内部 Kernel 概念。Platform 首版标准能力包含 I18n 和 Error Handling；最终不发布 Runtime 包，也不提供兼容入口。详见 [`docs/architecture/platform-framework.md`](docs/architecture/platform-framework.md)。
+`@g2rain/platform` 是前端应用运行与主子协作 SDK：包根导出共享协议，`/sub` 提供框架无关生命周期，`/main` 提供协调端口；两侧尚待在 Main Shell 与 Member 的真实运行链路中联合验证。Vue、Pinia、Router、qiankun 和应用启动继续由 Main Shell 或业务应用拥有。Runtime 只作为内部 Kernel 概念，不另发布包，也不提供兼容入口。详见 [`docs/architecture/platform-framework.md`](docs/architecture/platform-framework.md)。
 
 ## 4. 仓库与 npm workspace 配置
 
@@ -198,7 +198,7 @@ G2rain 变量是平台主题契约，Element Plus 变量只是适配层。后续
 }
 ```
 
-主题切换通过根节点属性完成，但修改 DOM 的能力属于 `@g2rain/runtime/theme`，不放入 CSS-only 的主题包：
+主题切换通过根节点属性完成，但修改 DOM 的能力属于 `@g2rain/platform/theme`，不放入 CSS-only 的主题包：
 
 ```ts
 const theme = createThemeController()
@@ -249,10 +249,10 @@ import '@g2rain/ui/style.css'
 - `TableSort`
 - `RemoteSelect` 基础组件
 - `ApiSelect`
+
+带组织、字典或状态语义的组件从 `@g2rain/ui/platform` 导入，不进入根入口：
+
 - `DictSelect`
-
-后续已公共化的平台组件（通过数据 Provider/回调注入，详见 [接入说明](docs/packages/platform-data-components.md)）：
-
 - `OrganSelect`
 - `DictText`
 - `StatusSwitch`
@@ -275,9 +275,13 @@ import '@g2rain/ui/style.css'
 需要的能力通过 Props、Slots、事件、Provider 或工厂参数传入。例如远程选择组件通过函数获取数据：
 
 ```vue
+<script setup lang="ts">
+import { DictSelect } from '@g2rain/ui/platform'
+</script>
+
 <DictSelect
-  dict-code="user_status"
-  :fetch-options="dictApi.list"
+  usage-code="user_status"
+  :api-method="dictApi.list"
 />
 ```
 
@@ -346,7 +350,7 @@ export * from './table-sort'
 export * from './remote-select'
 ```
 
-对外只允许从稳定的 `index.ts` 导入，不保证内部文件路径兼容：
+对外只允许从稳定入口导入，不保证内部文件路径兼容。通用组件从包根导入，平台数据组件从 `@g2rain/ui/platform` 导入：
 
 ```ts
 import {
@@ -355,9 +359,10 @@ import {
   SortableTable,
   TableColumn,
 } from '@g2rain/ui'
+import { OrganSelect, DictText, StatusSwitch } from '@g2rain/ui/platform'
 ```
 
-## 7. `@g2rain/http` 和 `@g2rain/runtime`
+## 7. `@g2rain/http` 和 `@g2rain/platform`
 
 ### 7.1 HTTP 包
 
@@ -389,17 +394,18 @@ const { client, dispose } = createHttpClient({
 })
 ```
 
-### 7.2 Runtime 包
+### 7.2 Platform 包
 
-`@g2rain/runtime` 可包含：
+`@g2rain/platform` 当前包含：
 
-- 权限 Provider 和 Vue 插件。
+- 包根共享契约：`RuntimeContext`、`RuntimeMessage`、`PlatformError`。
+- `/sub` 的 `createSubPlatform`、Scope 与 Capability 生命周期。
+- 权限 Provider 和 Vue 插件（仅 `./permission`）。
 - 全局 Loading 协调。
-- qiankun 微应用事件类型和消息处理器。
-- 主题状态类型、切换函数和主题变更事件。
-- 应用装配需要的公共接口。
+- 微应用事件类型和浏览器 Event Adapter。
+- 主题 Controller。
 
-运行时包只定义协议和通用实现，具体 Store 仍由各应用维护。
+包根和 Kernel 不导入 Vue。具体 Store、qiankun lifecycle 和独立启动仍由应用维护。`/main` 协调端口与标准 Preset 已在库内实现，尚待在 Main Shell 与 Member 的真实运行链路中验证。
 
 HTTP 工厂、错误模型、刷新单航班、主题 Controller 和消息 Adapter 的精确签名见 [`docs/packages/http-runtime-contract.md`](docs/packages/http-runtime-contract.md)。
 
@@ -487,22 +493,19 @@ npm publish --workspace @g2rain/ui --access public
 
 推荐 `g2rain-member-app` 作为首个迁移试点。
 
-### 阶段二：推广 UI 包
+### 阶段二：Member 整体验证
 
-1. 发布 `@g2rain/theme` 和 `@g2rain/ui`。
-2. 迁移其他业务 App。
-3. 删除已经由 npm 包替代的本地副本。
-4. 修改 `g2rain-app-template`，让新应用默认安装公共包。
-5. 更新 `g2rain-app-cli` 的生成逻辑和模板文档。
+1. 使用 `npm pack` 制品在 `g2rain-member-app` 验证 Theme、UI、HTTP 与 Platform 的组合。
+2. 完成 Member 的独立运行、qiankun 挂载、卸载和重新挂载验证，并由 Main Shell 验证主子协作。
+3. 验证期间不发布任何 `@g2rain/*` 包，也不要求其他业务 App 提前迁移。
+4. 仅在整体验证通过后，发布各包并再逐步迁移其他业务 App、模板和 CLI。
 
-### 阶段三：抽取基础设施
+### 阶段三：发布与推广
 
-1. 将 HTTP 代码拆分为纯通用能力和应用装配代码。
-2. 发布 `@g2rain/http`。
-3. 抽取权限、Loading、微应用通信和主题运行时。
-4. 发布前将未发布的 `packages/runtime` 直接重命名为 `packages/platform`，同步包名、导入和文档，不建立 Runtime 兼容包。
-5. 发布 `@g2rain/platform`。
-6. 逐个应用迁移；应用内部可以短期保留组合适配，但不得依赖或发布 `@g2rain/runtime`。
+1. 整体验证通过后，按 `theme → ui / http / platform` 的顺序发布 npm 包。
+2. `packages/platform` 已直接改名完成，不建立兼容包。
+3. 逐个应用迁移；应用内部可以短期保留组合适配，但不得依赖已删除的旧工作包名。
+4. 修改 `g2rain-app-template` 与 `g2rain-app-cli`，让新项目默认使用已发布的公共包。
 
 ## 11. 兼容与回滚策略
 
@@ -532,7 +535,7 @@ export {
 - 四个包可以独立构建；含 JS 的包生成类型声明。
 - npm 压缩包只包含必要的发布文件。
 - 公共包源码不存在对具体应用目录别名的依赖。
-- Playground 可组合验证 Theme / UI / Runtime 主题能力。
+- Playground 可组合验证 Theme / UI / Platform 主题能力。
 
 **试点与平台闭环（尚未完成）还应满足：**
 

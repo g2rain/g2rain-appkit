@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 type ExportValue = string | { types?: string; import?: string; default?: string }
 
-const packages = ['theme', 'ui', 'http', 'runtime'] as const
+const packages = ['theme', 'ui', 'http', 'platform'] as const
 const failures: string[] = []
 
 for (const packageName of packages) {

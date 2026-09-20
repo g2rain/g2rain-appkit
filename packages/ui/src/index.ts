@@ -1,8 +1,9 @@
-export * from './context'
-export * from './platform-data'
-export { default as OrganSelect } from './platform/OrganSelect.vue'
-export { default as DictText } from './platform/DictText.vue'
-export { default as StatusSwitch } from './platform/StatusSwitch.vue'
+export {
+  G2RAIN_UI_CONTEXT,
+  G2rainUi,
+  useG2rainUi,
+} from './context'
+export type { G2rainTranslator, G2rainUiContext, G2rainUiOptions } from './context'
 export * from './query-form'
 export * from './remote-select'
 export * from './table-sort'

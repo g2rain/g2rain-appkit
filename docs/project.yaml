@@ -30,12 +30,13 @@ packages:
   - "@g2rain/theme"
   - "@g2rain/ui"
   - "@g2rain/http"
-  - "@g2rain/runtime"
+  - "@g2rain/platform"
 
 documentation:
   entry: docs/README.md
   architecture: docs/architecture/overview.md
   platformFramework: docs/architecture/platform-framework.md
+  platformHandbook: docs/development/platform-handbook.md
   packageBoundaries: docs/packages/README.md
   componentBaseline: docs/packages/component-migration-baseline.md
   platformDataComponents: docs/packages/platform-data-components.md
@@ -49,7 +50,7 @@ documentation:
 
 validation:
   status: pilot-integration-in-progress
-  reviewedAt: "2026-09-18"
+  reviewedAt: "2026-09-19"
   readiness:
     libraryPhaseOne: passed
     pilotIntegration: in-progress
@@ -58,9 +59,9 @@ validation:
     registryRelease: not-ready
     platformClosedLoop: incomplete
   note: >
-    Theme、UI、HTTP、Runtime 首版实现与 Playground 已通过类型检查、测试、构建、制品检查和 npm pack dry-run。
-    g2rain-member-app 已安装四个本地制品包并完成生产构建；
+    Theme、UI、HTTP 首版实现与 Playground 已通过类型检查、测试、构建、制品检查和 npm pack dry-run。
+    g2rain-member-app 已安装 Theme、UI、HTTP 本地制品；Platform 的真实接入与 Main Shell 联调仍在验证。
     Theme/UI 按用户 2026-09-17 确认记录为试点闭环，不代表全部联调测试已通过。
     HTTP 已于 2026-09-18 经用户确认验证通过，member-app 的本地 components/http 已移除，应用装配迁至 runtime/http。
-    主题多实例释放、主壳广播及 Runtime 试点仍保留为跟踪项。
-    正式 npm 发布尚未执行。
+    2026-09-19 起 appkit 内运行时包名为 @g2rain/platform：包根契约、/sub Kernel、双壳入口解析、/main 协调端口和标准 Capability 已落地，壳与 Member 尚未接入，平台闭环未完成。
+    Member 的独立运行、qiankun 集成和 Platform Main/Sub 协作必须整体通过后，才会发布任何 npm 包。

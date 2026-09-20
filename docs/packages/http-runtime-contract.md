@@ -1,6 +1,6 @@
 # HTTP 与 Runtime 生成契约
 
-本文定义 `@g2rain/http` 和 `@g2rain/runtime` 的首版公共边界。现有应用代码是行为参考，不允许把其中的环境读取、具体 Store 或窗口全局变量原样搬入公共包。
+本文定义 `@g2rain/http` 和 `@g2rain/platform` 的首版公共边界。现有应用代码是行为参考，不允许把其中的环境读取、具体 Store 或窗口全局变量原样搬入公共包。
 
 两个包**互不依赖**：应用在组合根分别装配 HTTP Client 与 Runtime 能力。消息 Processor、Client 单例表、Mock 与环境 URL 计算留在应用层。
 
@@ -182,7 +182,7 @@ export function createDpopProof(input: DpopSignInput): Promise<string>
 ## 6. 请求取消与 Loading
 
 - HTTP 包遵循 Axios `signal`，不创建应用级 Loading UI。
-- `@g2rain/runtime/loading` 提供引用计数控制器，而不是直接耦合某个请求单例。
+- `@g2rain/platform/loading` 提供引用计数控制器，而不是直接耦合某个请求单例。
 
 ```ts
 export interface LoadingController {
@@ -200,7 +200,7 @@ export function createLoadingController(options: {
 
 ## 7. 主题 Runtime
 
-主题包只包含 CSS。浏览器主题状态由 `@g2rain/runtime/theme` 管理：
+主题包只包含 CSS。浏览器主题状态由 `@g2rain/platform/theme` 管理：
 
 ```ts
 export type G2rainTheme = 'light' | 'dark'

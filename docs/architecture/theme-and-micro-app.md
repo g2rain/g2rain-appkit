@@ -30,7 +30,7 @@
 sequenceDiagram
   participant Shell as 主应用
   participant App as 子应用
-  participant Runtime as @g2rain/runtime
+  participant Runtime as @g2rain/platform
 
   Shell->>Shell: 读取用户主题偏好
   Shell->>Shell: 设置 data-g2-theme
@@ -84,7 +84,7 @@ import '@g2rain/ui/style.css'
 ## 6. 主题切换职责
 
 - `@g2rain/theme` 只发布 CSS，不修改 DOM，也不持久化主题。
-- `@g2rain/runtime` 提供 `getTheme`、`setTheme` 和 `subscribeTheme` 等浏览器运行时能力。
+- `@g2rain/platform/theme` 提供 `createThemeController`，负责读取、写入和订阅浏览器主题。
 - Main Shell 决定集成模式下的主题并广播变化。
 - 独立应用使用相同 Runtime API 初始化主题。
 - Runtime 的所有订阅函数必须返回释放函数。

@@ -4,28 +4,28 @@
 
 ## 1. 当前状态（2026-09-18）
 
-Theme/UI 按用户确认记为试点闭环；HTTP 已在 `g2rain-member-app` 完成制品接入和验证，并删除原 `src/components/http` 兼容目录。应用专属单例、Mock、IAM Key、Loading 组合和刷新协调迁至 `src/runtime/http`，不属于公共包源码副本。Runtime 与平台推广继续单独验收。
+Theme/UI 按用户确认记为局部试点闭环；HTTP 已在 `g2rain-member-app` 完成制品接入和验证，并删除原 `src/components/http` 兼容目录。应用专属单例、Mock、IAM Key、Loading 组合和刷新协调迁至 `src/runtime/http`，不属于公共包源码副本。当前 Appkit 仍处于 Member 整体验证期：Platform 的 Main/Sub 协作、Member 独立与 qiankun 运行必须与已验证的 Theme/UI/HTTP 共同闭环，之后才可发布任何 npm 包。
 
 | 档位 | 状态 | 说明 |
 | --- | --- | --- |
 | A. 库内阶段一 | 已通过 | 四包实现、Playground、typecheck / test / build / pack:check |
-| B. 试点接入 | Theme/UI 闭环；HTTP 通过 | Member 已接入 Theme/UI/HTTP；HTTP 本地兼容组件已清理，Runtime 继续验收 |
-| C. 正式 Registry 推广 | 未就绪 | 尚未 npm 发布，未完成真实 App / qiankun 验收 |
+| B. Member 整体验证 | 进行中 | Member 已接入 Theme/UI/HTTP；HTTP 本地兼容组件已清理，Platform 与 Main Shell 的真实协作仍待验收 |
+| C. 正式 Registry 发布 | 未就绪 | 只有 B 档全部通过后才可发布；当前不发布任何 npm 包 |
 | D. 平台闭环 | 未完成 | 模板 / CLI 未默认依赖；业务仓仍保留本地副本 |
 
 权威状态以 [`docs/project.yaml`](../project.yaml) 的 `validation` 为准。
 
 ## 2. A 档：库内阶段一（已完成）
 
-- [x] `@g2rain/theme`、`@g2rain/ui`、`@g2rain/http`、`@g2rain/runtime` 首版实现
+- [x] `@g2rain/theme`、`@g2rain/ui`、`@g2rain/http`、`@g2rain/platform` 首版实现
 - [x] `package.json#exports` 与 `dist` 制品一致
 - [x] 单元测试覆盖关键路径
 - [x] Playground 覆盖 Theme、基础 UI、平台数据组件与 ThemeController
 - [x] `npm run pack:check` 通过
 
-## 3. B 档：试点接入起步条件
+## 3. B 档：Member 整体验证条件
 
-满足以下条件即可开始试点，不必等待正式 publish：
+当前只允许使用本地 `npm pack` 制品开展 Member 整体验证，不发布到 Registry：
 
 - [x] 迁移指南与平台组件 Provider 文档可用
 - [x] 可用 `npm pack` 生成与发布结构一致的 tarball
@@ -38,12 +38,13 @@ Theme/UI 按用户确认记为试点闭环；HTTP 已在 `g2rain-member-app` 完
 
 试点期间允许暂时保留本地兼容转发层；未验证通过前不删除全部本地实现。
 
-## 4. C 档：正式 Registry 推广条件
+## 4. C 档：正式 Registry 发布条件
 
+- [ ] B 档的独立模式、qiankun 模式、卸载/重新挂载、主题协作和 Platform Main/Sub 联合验证全部通过
 - [ ] `npm whoami` 确认具备 `@g2rain` scope 发布权限
 - [ ] 根目录 `LICENSE`、各包版本与 `CHANGELOG.md` 一致
-- [ ] 按依赖顺序发布：`theme` → `ui` / `http` / `runtime`
-- [ ] 至少一个真实 App 使用 Registry 版本完成独立 + qiankun 验收
+- [ ] 按依赖顺序发布：`theme` → `ui` / `http` / `platform`
+- [ ] Member 的 `npm pack` 制品验证结论与发布候选版本、锁定依赖和变更说明一致
 - [ ] 发布说明包含已知行为差异（例如 StatusSwitch 成功后更新、不再自动 ElMessage）
 - [ ] CI 至少执行 typecheck、test、build、pack:check（当前仓库尚未配置 `.github` 工作流）
 

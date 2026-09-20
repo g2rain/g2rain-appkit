@@ -1,0 +1,90 @@
+{
+  "name": "@g2rain/platform",
+  "version": "0.1.0",
+  "description": "G2rain frontend application runtime and main/sub collaboration SDK.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "files": [
+    "dist",
+    "!dist/**/*.test.*"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.js"
+    },
+    "./micro-app": {
+      "types": "./dist/micro-app/index.d.ts",
+      "import": "./dist/micro-app/index.js"
+    },
+    "./permission": {
+      "types": "./dist/permission/index.d.ts",
+      "import": "./dist/permission/index.js"
+    },
+    "./permission/vue": {
+      "types": "./dist/permission/vue.d.ts",
+      "import": "./dist/permission/vue.js"
+    },
+    "./loading": {
+      "types": "./dist/loading/index.d.ts",
+      "import": "./dist/loading/index.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js"
+    },
+    "./i18n/vue-i18n": {
+      "types": "./dist/i18n/vue-i18n.d.ts",
+      "import": "./dist/i18n/vue-i18n.js"
+    },
+    "./error": {
+      "types": "./dist/error/index.d.ts",
+      "import": "./dist/error/index.js"
+    },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "import": "./dist/http/index.js"
+    },
+    "./sub": {
+      "types": "./dist/sub/index.d.ts",
+      "import": "./dist/sub/index.js"
+    },
+    "./main": {
+      "types": "./dist/main/index.d.ts",
+      "import": "./dist/main/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0",
+    "vue-i18n": "^11.4.4"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    },
+    "vue-i18n": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "vue": "^3.5.26",
+    "vue-i18n": "^11.4.12"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
