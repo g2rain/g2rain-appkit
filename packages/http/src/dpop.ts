@@ -4,7 +4,7 @@ import { defaultParamsSerializer } from './params-serializer.js'
 import { toRequestBodyBytes } from './request-body.js'
 import type { DpopSignInput } from './types.js'
 
-/** Creates an ES256 DPoP proof without reading browser globals or application state. */
+/** 生成 ES256 DPoP proof。不读浏览器全局状态，jti、密钥和报文字节都由调用方传入。pha 是“查询串、换行、请求体 SHA-256”再做一次 SHA-256；查询串为空时仍保留换行。 */
 export async function createDpopProof(input: DpopSignInput): Promise<string> {
   const query = typeof input.params === 'string' ? input.params : defaultParamsSerializer(input.params)
   const bodyHash = sha256(await toRequestBodyBytes(input.data))

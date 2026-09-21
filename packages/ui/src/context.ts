@@ -13,6 +13,7 @@ export interface G2rainUiContext {
   locale?: () => string | undefined
 }
 
+/** 未安装插件时翻译函数原样返回 fallback，组件仍可渲染。 */
 const defaultContext: G2rainUiContext = {
   translate: (_key, fallback) => fallback,
 }
@@ -30,6 +31,7 @@ export const G2rainUi = {
   },
 }
 
+/** 未安装插件时返回只含 fallback 翻译的默认上下文，不要求每个组件都判断注入是否存在。 */
 export function useG2rainUi(): G2rainUiContext {
   return inject(G2RAIN_UI_CONTEXT, defaultContext)
 }

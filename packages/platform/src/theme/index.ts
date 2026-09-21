@@ -10,6 +10,10 @@ export interface ThemeController {
   dispose(): void
 }
 
+/**
+ * 把主题写到根节点的 data-g2-theme。初始值优先读节点上已有的 dataset，否则用 initialTheme，默认 light。
+ * 非浏览器环境必须传入 root。相同主题或已 dispose 时 setTheme 不产生副作用。
+ */
 export function createThemeController(options: {
   root?: HTMLElement
   initialTheme?: G2rainTheme
@@ -43,6 +47,10 @@ export function createThemeController(options: {
   }
 }
 
+/**
+ * 只在独立模式且 context.theme 有值时改主题。集成模式的主题由 Main Shell 负责。
+ * 未注入 controller 时，第一次需要应用主题才创建，并在 Capability dispose 时释放。
+ */
 export function createThemeCapability(options: {
   controller?: ThemeController
   root?: HTMLElement

@@ -9,6 +9,10 @@ export type PlatformErrorSource =
 
 export type PlatformPhase = 'bootstrap' | 'mount' | 'update' | 'unmount' | 'dispose'
 
+/**
+ * 平台内统一错误。code 是稳定机器码，message 是已经确定的文案。
+ * errors 只在聚合失败时存在；cause 指向第一条原始异常。
+ */
 export class PlatformError extends Error {
   readonly code: string
   readonly source: PlatformErrorSource

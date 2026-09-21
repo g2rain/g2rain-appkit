@@ -25,6 +25,7 @@ function present(value: string | undefined): string | undefined {
   return value
 }
 
+/** 先加载文案，再切换引擎 locale，最后同步组件库。空 locale 不产生副作用。 */
 async function applyLocale(options: I18nCapabilityOptions, locale: string | undefined): Promise<void> {
   const next = present(locale)
   if (!next) return
@@ -33,6 +34,10 @@ async function applyLocale(options: I18nCapabilityOptions, locale: string | unde
   await options.uiLocale?.applyLocale(next)
 }
 
+/**
+ * bootstrap 时把引擎和 UI 适配器的 dispose 登记到 Definition Scope。
+ * mount 与 update 都按当前 context.locale 应用；rollbackUpdate 改回 previous.locale。
+ */
 export function createI18nCapability(options: I18nCapabilityOptions): RuntimeCapability {
   return {
     id: 'i18n',

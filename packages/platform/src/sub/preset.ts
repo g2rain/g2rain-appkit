@@ -19,6 +19,11 @@ export interface StandardSubPlatform extends SubPlatform {
   handleError(error: unknown): Promise<PlatformError>
 }
 
+/**
+ * 子应用标准装配：先 i18n，再 error，然后是调用方追加的 Capability。
+ * error 在提供 translate 时依赖 i18n，因此必须排在 i18n 之后，不能让调用方插到它们前面。
+ * handleError 直接进入错误 Capability，不经过 mount 状态机。
+ */
 export function createStandardSubPlatform(options: StandardSubPlatformOptions): StandardSubPlatform {
   const errors = createErrorCapability({
     ...options.error,

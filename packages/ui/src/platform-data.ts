@@ -25,6 +25,6 @@ export type DictLoader = (params: DictQuery) => Promise<readonly RemoteSelectOpt
 export interface G2rainDataProviders {
   organ?: OrganDataProvider
   dict?: { loadOptions: DictLoader }
-  /** Shared contract for later UserSelect and other entity selectors. */
+  /** 预留给后续 UserSelect 等实体选择器，当前组件不读取。 */
   entities?: Readonly<Record<string, EntityDataProvider>>
 }

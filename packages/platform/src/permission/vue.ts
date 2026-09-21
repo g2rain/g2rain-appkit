@@ -14,7 +14,7 @@ export interface PermissionPluginOptions {
   onMissingProvider?: () => void
 }
 
-/** Installs a permission provider owned by the consuming application. */
+/** 未提供 provider 时安装全部拒绝的实现，避免组件在缺少插件时误放行。 */
 export function createPermissionPlugin(options: PermissionPluginOptions = {}): Plugin {
   return {
     install(app: App) {
@@ -26,7 +26,7 @@ export function createPermissionPlugin(options: PermissionPluginOptions = {}): P
 
 export const G2rainPermission: Plugin = createPermissionPlugin()
 
-/** Returns the injected provider, or a secure deny-all fallback outside plugin setup. */
+/** 返回注入的 provider。插件未安装时同样全部拒绝，不把缺失当成有权限。 */
 export function usePermission(): PermissionProvider {
   return inject(G2RAIN_PERMISSION_PROVIDER, null) ?? denyByDefault
 }

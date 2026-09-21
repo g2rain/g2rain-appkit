@@ -27,6 +27,7 @@ const { items, loading } = useDictOptions(() => ({
   enabled: props.value != null && props.value !== '',
   params: { code: typeof props.value === 'boolean' || props.value == null ? undefined : String(props.value).trim(), usageCode: props.usageCode, dictCode: props.dictCode, locale: ui.locale?.() },
 }), error => emit('error', error))
+/** 布尔值按 true/1/yes 与 false/0/no 匹配字典 code，其余值按去空格后的字符串相等匹配。 */
 const text = computed(() => {
   if (props.value == null || props.value === '') return props.placeholder
   const match = items.value.find(item => {

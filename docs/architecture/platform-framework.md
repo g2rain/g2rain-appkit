@@ -1,11 +1,11 @@
 # G2rain Platform 前端应用运行与主子协作方案
 
-- 状态：草案
-- 日期：2026-09-19
-- 开发操作：[Main Shell 与子应用开发手册](../development/platform-handbook.md)
-- 目标包：`@g2rain/platform`（包已建立；Kernel、`/sub`、标准 Preset 和独立 Capability 已落地，壳与 Member 尚未接入）
+- 状态：试点实施中
+- 日期：2026-09-20
+- 开发操作：[Main Shell 接入](../development/main-integration.md)、[业务 App 接入](../development/app-integration.md)
+- 目标包：`@g2rain/platform`（Kernel、`/sub`、标准 Preset 和独立 Capability 已落地，Member 已接入 `/sub`，Main Shell 尚未接入 `/main`）
 - 内部核心：Runtime Kernel
-- 当前基线：`packages/platform` 已提供包根共享契约、`createSubPlatform`、`createStandardSubPlatform`、`resolveSubHostProps`、`createMainPlatform`，以及 Theme、Loading、Permission、Micro App、I18n、Error、HTTP Capability。这些能力可单独导入。Main Shell 与 `g2rain-member-app` 都尚未接入。
+- 当前基线：`packages/platform` 已提供包根共享契约、`createSubPlatform`、`createStandardSubPlatform`、`resolveSubHostProps`、`createMainPlatform`，以及 Theme、Loading、Permission、Micro App、I18n、Error、HTTP Capability。这些能力可单独导入。`g2rain-member-app` 已接入 `/sub` 并于 2026-09-20 经用户确认为基本验证成功；Main Shell 的 `/main` 协调端口接线和联合验收仍未完成。
 
 ## 1. 背景
 
@@ -33,7 +33,7 @@ G2rain 业务 App 同时支持独立运行和微前端集成运行。当前各 A
 | Runtime Kernel | Context、状态机、生命周期、依赖顺序和释放 | 否，属于 Platform 内核 |
 | 已删除的工作包名 | 从未发布；appkit 内目录与包名已改为 `@g2rain/platform` | 否；不保留兼容入口 |
 
-由于旧工作包从未发布，也没有外部版本兼容承诺，appkit 已直接把目录、包名、exports 和内部引用改为 `@g2rain/platform`。最终制品只发布 `@g2rain/platform`，不建立别名包、转发入口或弃用周期。`g2rain-member-app` 仍引用旧制品，留到接入阶段。
+由于旧工作包从未发布，也没有外部版本兼容承诺，appkit 已直接把目录、包名、exports 和内部引用改为 `@g2rain/platform`。最终制品只发布 `@g2rain/platform`，不建立别名包、转发入口或弃用周期。`g2rain-member-app` 已切换到 `@g2rain/platform` 本地制品。
 
 ### 1.2 现行实现基线
 
@@ -497,7 +497,7 @@ export interface SubApplication {
 }
 ```
 
-应用的 qiankun 入口负责生命周期转发、容器校验和 Auth Bridge 调用；独立入口负责环境读取和启动顺序。Kernel 只接收标准 `SubMountRequest`。双壳差异由 `/sub` 的 `resolveSubHostProps` 在进内核前消掉：没有 `instanceId` 时把现行壳的 `appKey` 当作实例键，Token 只放进一次性 `auth`；有 `instanceId` 时要求完整的新壳身份，且 `appKey` 等于 `instanceId`。`createSubDirectedMessage` 的 `appKey` 同样固定等于 `instanceId`。这两处都不导入 qiankun，也不改 Kernel。壳与 Member 都尚未接入。未来替换 qiankun 时修改 Main Shell RuntimeAdapter 和应用入口，不修改 Platform 公共协议或 Sub 内核。
+应用的 qiankun 入口负责生命周期转发、容器校验和 Auth Bridge 调用；独立入口负责环境读取和启动顺序。Kernel 只接收标准 `SubMountRequest`。双壳差异由 `/sub` 的 `resolveSubHostProps` 在进内核前消掉：没有 `instanceId` 时把现行壳的 `appKey` 当作实例键，Token 只放进一次性 `auth`；有 `instanceId` 时要求完整的新壳身份，且 `appKey` 等于 `instanceId`。`createSubDirectedMessage` 的 `appKey` 同样固定等于 `instanceId`。这两处都不导入 qiankun，也不改 Kernel。Member 已按此边界接入，现行壳仍可通过 `appKey` 兼容路径驱动；Main Shell 尚未接入 `/main`。未来替换 qiankun 时修改 Main Shell RuntimeAdapter 和应用入口，不修改 Platform 公共协议或 Sub 内核。
 
 ## 6. Theme Adapter：隔离主题和 UI 框架
 
@@ -780,19 +780,19 @@ Preset 只是组合器，不重新实现 Capability。为避免笨重：
 ### 阶段 0：现有原语基线
 
 - 以现有 Theme、Loading、Permission、Micro App 实现作为代码迁移基线。
-- `g2rain-member-app` 当前继续由应用代码编排生命周期。
-- appkit 已将目录改名为 `packages/platform`，包名与内部导入均为 `@g2rain/platform`。不发布旧包名，不提供兼容别名或转发入口。Member 试点仍引用旧制品。
+- `g2rain-member-app` 已由应用组合根把独立模式和 qiankun 生命周期统一委托给 `@g2rain/platform/sub`，Vue、Pinia、Router、认证和资源加载仍由应用装配。
+- appkit 已将目录改名为 `packages/platform`，包名与内部导入均为 `@g2rain/platform`。不发布旧包名，不提供兼容别名或转发入口；Member 试点已使用新制品名。
 
 ### 阶段 1：PlatformInstance Kernel 与 Scope
 
-appkit 已实现 Definition、`Map<instanceId, PlatformInstance>`、Runtime Context、Capability 契约和 Instance Scope，并由 `@g2rain/platform/sub` 的 `createSubPlatform` 暴露低层工厂。尚未接入 qiankun 或现有 App。
+appkit 已实现 Definition、`Map<instanceId, PlatformInstance>`、Runtime Context、Capability 契约和 Instance Scope，并由 `@g2rain/platform/sub` 的 `createSubPlatform` 暴露低层工厂。Member 已通过应用自有 qiankun 入口接入该生命周期；Platform 本身仍不依赖 qiankun。
 
 - 使用纯 TypeScript 测试不同 `instanceId` 并发挂载、同一 `instanceId` 重复 `mount` 拒绝、失败回滚、逆序释放和重新挂载。不在 Appkit 中实现 RuntimeStore 或 qiankun handle 表。
-- 不接入 qiankun，不修改现有 App。`inactive` 不作为 Sub 状态测试；它只存在于 Main Shell。
+- Platform 包不接入 qiankun；由 Member 自有适配器转发宿主生命周期。`inactive` 不作为 Sub 状态测试；它只存在于 Main Shell。
 
 ### 阶段 2：Main/Sub 与现有应用契约
 
-`@g2rain/platform/main` 的协调端口已在 appkit 定义。`/sub` 低层生命周期已在阶段 1 落地，并已提供现行壳与新壳的入口解析。Main Shell 的身份字段、props 拆分、update 队列、销毁顺序和端口接线尚未开始。Member 尚未改用这些函数。
+`@g2rain/platform/main` 的协调端口已在 appkit 定义。`/sub` 低层生命周期已在阶段 1 落地，并已提供现行壳与新壳的入口解析。Member 已改用 `/sub` 的入口解析与标准 Preset；Main Shell 的身份字段、props 拆分、update 队列、销毁顺序和 `/main` 端口接线尚未完成。
 
 - Main Shell 继续维护 QiankunAdapter，子应用继续维护自己的 qiankun lifecycle；Platform 包不依赖 qiankun。
 - 在 Main Shell 先明确目标身份：`MicroAppDefinition.applicationCode`、`WorkspaceView.viewId`、`RuntimeInstance.instanceId`；第一阶段允许三个对象的局部 ID 数值相等，但协议字段不再混用。
@@ -804,7 +804,7 @@ appkit 已实现 Definition、`Map<instanceId, PlatformInstance>`、Runtime Cont
 
 ### 阶段 3：Platform 标准能力
 
-appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 HTTP 做成可单独导入的 Capability。`createStandardSubPlatform` 强制先挂 I18n，再挂依赖它的 Error。`createSubPlatform` 仍只接受 `capabilities` 数组。壳与 Member 尚未接入。
+appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 HTTP 做成可单独导入的 Capability。`createStandardSubPlatform` 强制先挂 I18n，再挂依赖它的 Error。`createSubPlatform` 仍只接受 `capabilities` 数组。Member 已使用标准 Preset，并由应用注入其余能力；Main Shell 尚未接入 `/main`。
 
 - 把现有 Theme、Loading、Permission、Micro App 包装为 Capability。
 - 新增 I18n Capability 和官方 `vue-i18n`/UI Locale Adapter。
@@ -814,7 +814,7 @@ appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 
 ### 阶段 4：Main/Sub 联合试点与发布准备
 
 - 在 `g2rain-main-shell` 接入 Main 协调端口，并把 `TabClass/TabTypes` 逐步迁移为 `WorkspaceView`；RuntimeStore 和 RuntimeAdapter 保持 Main Shell 所有，具体 handle 保持 Adapter 私有。
-- 在 `g2rain-member-app` 接入 Sub Preset；应用继续创建 Vue、Pinia、Router，并维护 qiankun lifecycle 和独立启动入口。
+- [已完成] 在 `g2rain-member-app` 接入 Sub Preset；应用继续创建 Vue、Pinia、Router，并维护 qiankun lifecycle 和独立启动入口。
 - 使用 Manager/Department 做兼容回归，确认现行 props、Token/Locale 消息和多实例行为不被破坏。
 - 路由表、资源加载、SSO、Auth Bridge、Store 和业务语言包继续留在 App 组合根。
 - 验证语言切换、错误码翻译、提示覆盖和错误上报降级。
@@ -854,11 +854,11 @@ appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 
 ## 12. 变更和回滚
 
 - 旧工作包从未发布，因此直接改名，不承担 npm 版本兼容成本。appkit 内改名已完成。
-- appkit 的 workspace、源码导入、Playground、文档、构建检查和 pack 检查已切换到 `@g2rain/platform`。Member 试点仍引用旧制品，留到接入阶段，仓库内不再保留旧包消费入口。
+- appkit 的 workspace、源码导入、Playground、文档、构建检查和 pack 检查已切换到 `@g2rain/platform`，Member 试点也已切换到新制品名；仓库内不再保留旧包消费入口。
 - 最终只允许 `@g2rain/platform` 出现在待发布制品清单中；Runtime 仅可作为内部类型和 Kernel 术语出现。
 - Member 试点期间保留一次版本回退能力；回滚只需恢复组合根和包版本。
 - Platform 生命周期或消息协议发生不兼容变化时使用新的主版本，并提供迁移说明。
-- 未完成真实 App 验证前，不把目标架构标记为正式平台闭环。
+- Member 的真实 App 试点基本通过后，仍需完成 Main Shell `/main` 接线、主子联合验收、发布候选制品核对和平台推广，才能标记为正式平台闭环。
 
 ## 13. 已冻结的首版决策
 

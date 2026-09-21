@@ -12,7 +12,9 @@ import type {
   SubPlatform,
 } from '../sub/types.js'
 
+/** Definition 级状态。实例可以挂载多次，Definition 本身只 bootstrap 一次。 */
 type DefinitionState = 'created' | 'bootstrapped' | 'disposing' | 'disposed'
+/** 单个 instanceId 的状态。updating 仍可被卸载，mounting / unmounting 则视为忙碌。 */
 type InstanceState = 'mounting' | 'mounted' | 'updating' | 'unmounting'
 
 interface MountedCapability {
@@ -29,6 +31,7 @@ interface InstanceRecord {
   mounted: MountedCapability[]
 }
 
+/** 把未知异常收成带阶段的 PlatformError；已经是 PlatformError 的原样返回。 */
 function asPlatformError(phase: PlatformPhase, error: unknown, capabilityId?: string): PlatformError {
   if (error instanceof PlatformError) return error
   const message = error instanceof Error ? error.message : 'Platform lifecycle failed.'
@@ -41,6 +44,7 @@ function asPlatformError(phase: PlatformPhase, error: unknown, capabilityId?: st
   })
 }
 
+/** 多条失败合成 runtime.aggregate；只有一条时保持原错误，避免无意义包装。 */
 function combine(phase: PlatformPhase, errors: readonly unknown[], capabilityId?: string): PlatformError {
   if (errors.length === 1) return asPlatformError(phase, errors[0], capabilityId)
   return new PlatformError({
@@ -56,6 +60,7 @@ function isRuntimeMode(value: unknown): value is RuntimeMode {
   return value === 'standalone' || value === 'integrated'
 }
 
+/** 拷贝上下文，避免调用方随后修改原对象影响已挂载实例。metadata 只做浅拷贝。 */
 function snapshotContext(context: RuntimeContext): RuntimeContext {
   return {
     applicationCode: context.applicationCode,
@@ -70,6 +75,11 @@ function snapshotContext(context: RuntimeContext): RuntimeContext {
   }
 }
 
+/**
+ * 只合并 locale、theme、initialRoute、metadata。
+ * applicationCode、viewId、instanceId、mode、contextPath 在实例生命周期内不可变。
+ * 字段出现在 patch 里且值为 undefined，表示清空，而不是保留旧值。
+ */
 function applyPatch(previous: RuntimeContext, patch: RuntimeContextUpdate): RuntimeContext {
   const next = snapshotContext(previous)
   if ('locale' in patch) next.locale = patch.locale
@@ -79,6 +89,7 @@ function applyPatch(previous: RuntimeContext, patch: RuntimeContextUpdate): Runt
   return next
 }
 
+/** 按 mount 的逆序 unmount，并释放每个 Capability 自己的子 Scope。单个失败不中断其余清理。 */
 async function rollbackMounted(mounted: readonly MountedCapability[], phase: PlatformPhase): Promise<void> {
   const errors: unknown[] = []
   for (let index = mounted.length - 1; index >= 0; index -= 1) {
@@ -98,6 +109,7 @@ async function rollbackMounted(mounted: readonly MountedCapability[], phase: Pla
   if (errors.length > 0) throw combine(phase, errors)
 }
 
+/** update 失败时，对已成功的 Capability 逆序调用 rollbackUpdate。 */
 async function rollbackUpdates(
   updated: ReadonlyArray<MountedCapability & { updateInput: PlatformUpdateInput }>,
   phase: PlatformPhase,
@@ -115,6 +127,13 @@ async function rollbackUpdates(
   if (errors.length > 0) throw combine(phase, errors)
 }
 
+/**
+ * 创建子应用 Definition。一份 Definition 对应一次脚本加载，可按 instanceId 同时挂载多个实例。
+ *
+ * Capability 在构造时按 dependsOn 做一次拓扑排序，之后 bootstrap、mount、update 都沿这个顺序，
+ * 卸载和 dispose 沿相反顺序。任一步失败都会回滚已经成功的步骤，再把全部失败合成一个 PlatformError。
+ * dispose 先等进行中的生命周期结束，再释放仍挂着的实例和 Definition 级资源。
+ */
 export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatform {
   if (!options.applicationCode?.trim()) {
     throw new PlatformError({
@@ -139,6 +158,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
   let disposeTask: Promise<void> | undefined
   const operations = new Set<Promise<void>>()
 
+  /** 登记生命周期操作供 dispose 排空。操作本身的成败仍原样返回给调用方。 */
   function track<T>(operation: Promise<T>): Promise<T> {
     const done = operation.then(() => undefined, () => undefined)
     operations.add(done)
@@ -148,12 +168,14 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     return operation
   }
 
+  /** 等到当前已登记的操作结束。清理过程中新登记的操作也会被下一轮等完。 */
   async function drainOperations(): Promise<void> {
     while (operations.size > 0) {
       await Promise.all([...operations])
     }
   }
 
+  /** disposing / disposed 之后拒绝新的 bootstrap、mount、update 和 unmount。 */
   function assertActive(phase: PlatformPhase): void {
     if (state === 'disposing' || state === 'disposed') {
       throw new PlatformError({
@@ -164,6 +186,11 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     }
   }
 
+  /**
+   * 每个 Capability 使用 Definition Scope 的子 Scope。
+   * 失败时先释放当前子 Scope，再逆序释放已经 bootstrap 成功的 Scope。
+   * 若 bootstrap 过程中进入 disposing，已启动的 Capability 也会回滚。
+   */
   async function runBootstrap(): Promise<void> {
     const started: RuntimeScope[] = []
     try {
@@ -203,6 +230,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     }
   }
 
+  /** 已 bootstrap 直接返回。并发调用共享同一次 runBootstrap，失败后允许再次发起。 */
   function bootstrap(): Promise<void> {
     assertActive('bootstrap')
     if (state === 'bootstrapped') return Promise.resolve()
@@ -248,6 +276,11 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     }
   }
 
+  /**
+   * 先确保 bootstrap，再按依赖顺序 mount Capability，最后挂载应用。
+   * 尚未 push 进 mounted 的子 Scope 记在 pendingScope，失败时单独释放。
+   * 中途失败会卸载已创建的应用、逆序 unmount Capability，并删除实例记录。
+   */
   async function runMount(input: SubMountRequest): Promise<void> {
     assertActive('mount')
     validateMount(input)
@@ -268,6 +301,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     }
     instances.set(input.instanceId, record)
 
+    /** mount 途中 Definition 被 dispose，或这条记录已不是当前实例时，中止并走统一回滚。 */
     function assertMountContinues(): void {
       if (state !== 'bootstrapped' || record.state !== 'mounting' || instances.get(input.instanceId) !== record) {
         throw new PlatformError({
@@ -347,6 +381,11 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     await rollbackUpdates(updated, 'update')
   }
 
+  /**
+   * 只有 mounted 可以更新。全部 Capability 成功后才写回 context。
+   * 应用 update 失败时，先用 previous 再调一次应用，再回滚已更新的 Capability。
+   * 失败后实例仍保持 mounted，调用方可以重试或卸载。
+   */
   async function runUpdate(instanceId: string, patch: RuntimeContextUpdate): Promise<void> {
     assertActive('update')
     const record = instances.get(instanceId)
@@ -417,6 +456,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     return track(runUpdate(instanceId, patch))
   }
 
+  /** 正常卸载。只接受 mounted / updating：先卸应用，再逆序 unmount Capability，最后释放实例 Scope。 */
   async function releaseInstance(instanceId: string, phase: PlatformPhase): Promise<void> {
     const record = instances.get(instanceId)
     if (!record) {
@@ -459,6 +499,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     if (errors.length > 0) throw combine(phase, errors)
   }
 
+  /** dispose 时用于 mounting、unmounting 等非稳定状态。不检查状态机，尽量把资源和记录清掉。 */
   async function forceCleanup(record: InstanceRecord, instanceId: string): Promise<void> {
     const errors: unknown[] = []
     try {
@@ -491,6 +532,11 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     })())
   }
 
+  /**
+   * 先排空进行中的 mount / update / unmount，再逐个释放实例。
+   * 稳定实例走 releaseInstance；忙状态走 forceCleanup。最后逆序 dispose Capability 和 Definition Scope。
+   * 无论成功失败，结束时状态都是 disposed。
+   */
   async function runDispose(): Promise<void> {
     await drainOperations()
     const errors: unknown[] = []
@@ -530,6 +576,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     }
   }
 
+  /** 第一次调用进入 disposing 并启动清理；重复调用复用同一次 Promise。 */
   function dispose(): Promise<void> {
     if (state === 'disposed') return Promise.resolve()
     if (!disposeTask) {

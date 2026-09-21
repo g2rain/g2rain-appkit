@@ -33,35 +33,52 @@ packages:
   - "@g2rain/platform"
 
 documentation:
-  entry: docs/README.md
+  entry: docs/index.md
   architecture: docs/architecture/overview.md
+  dependencies: docs/architecture/dependencies.md
+  deviations: docs/architecture/deviations.md
   platformFramework: docs/architecture/platform-framework.md
   platformHandbook: docs/development/platform-handbook.md
+  mainIntegration: docs/development/main-integration.md
+  appIntegration: docs/development/app-integration.md
   packageBoundaries: docs/packages/README.md
   componentBaseline: docs/packages/component-migration-baseline.md
   platformDataComponents: docs/packages/platform-data-components.md
   runtimeContracts: docs/packages/http-runtime-contract.md
   development: docs/development/repository-conventions.md
   buildAndTest: docs/development/build-and-test-contract.md
+  definitionOfDone: docs/development/definition-of-done.md
   integrationReadiness: docs/development/integration-readiness.md
-  release: docs/release/publishing.md
+  publicContracts: docs/api/public-contracts.md
+  decisions: docs/decisions/README.md
+  operations:
+    publishing: docs/operations/publishing.md
+    troubleshooting: docs/operations/troubleshooting.md
+  security: docs/security/security-boundaries.md
+  requirements: docs/requirements/README.md
   migration: docs/migration/application-migration.md
   changelog: CHANGELOG.md
 
 validation:
-  status: pilot-integration-in-progress
-  reviewedAt: "2026-09-19"
+  status: member-app-pilot-basically-passed
+  reviewedAt: "2026-09-20"
   readiness:
     libraryPhaseOne: passed
-    pilotIntegration: in-progress
-    themeUiPilot: closed-by-user-confirmation
+    memberAppPilot: basically-passed
+    pilotIntegration: basically-passed
+    themeUiPilot: passed-by-user-confirmation
     httpPilot: passed
+    platformSubPilot: passed-by-user-confirmation
+    mainShellPlatformMainIntegration: pending
     registryRelease: not-ready
     platformClosedLoop: incomplete
   note: >
     Theme、UI、HTTP 首版实现与 Playground 已通过类型检查、测试、构建、制品检查和 npm pack dry-run。
-    g2rain-member-app 已安装 Theme、UI、HTTP 本地制品；Platform 的真实接入与 Main Shell 联调仍在验证。
-    Theme/UI 按用户 2026-09-17 确认记录为试点闭环，不代表全部联调测试已通过。
-    HTTP 已于 2026-09-18 经用户确认验证通过，member-app 的本地 components/http 已移除，应用装配迁至 runtime/http。
-    2026-09-19 起 appkit 内运行时包名为 @g2rain/platform：包根契约、/sub Kernel、双壳入口解析、/main 协调端口和标准 Capability 已落地，壳与 Member 尚未接入，平台闭环未完成。
-    Member 的独立运行、qiankun 集成和 Platform Main/Sub 协作必须整体通过后，才会发布任何 npm 包。
+    g2rain-member-app 已安装 Theme、UI、HTTP、Platform 本地制品，并以 @g2rain/platform/sub 的
+    createStandardSubPlatform 统一独立模式与 qiankun 子应用生命周期。
+    Theme/UI 按用户 2026-09-17 确认记录为试点通过；HTTP 已于 2026-09-18 经用户确认验证通过，
+    member-app 的本地 components/http 已移除，应用装配迁至 runtime/http。
+    2026-09-20 用户确认 Appkit 在 member-app 上已基本验证成功；该结论用于确认真实 App 的 Sub
+    接入方向，不替代逐项测试记录，也不表示 Main Shell 已接入 @g2rain/platform/main。
+    Registry 发布、Main Shell 的 /main 端口接线、跨主子应用联合验收、模板/CLI 默认接入和其他 App
+    推广仍未完成，因此平台闭环保持 incomplete，当前不发布任何 npm 包。

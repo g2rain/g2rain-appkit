@@ -46,6 +46,7 @@ function label(value: StatusValue) {
   const hit = items.value.find(item => String(item.code) === String(value))
   return String(hit?.name ?? (value === 'ACTIVE' ? ui.translate('G2_OPT_ACTIVE', '有效') : value === 'INACTIVE' ? ui.translate('G2_OPT_INACTIVE', '无效') : value))
 }
+/** 请求成功后才改 v-model。期间外部已改值，或组件已卸载，则不再回写，避免覆盖更新的状态。 */
 async function change(nextValue: StatusValue) {
   if (props.disabled || loading.value || nextValue === props.modelValue) return
   const prevValue = props.modelValue

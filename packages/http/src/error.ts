@@ -9,6 +9,10 @@ export interface G2rainHttpErrorOptions {
   cause?: unknown
 }
 
+/**
+ * HTTP 层错误。网络失败默认可重试，其余来源默认不可重试。
+ * source 区分网络、后端业务包、登录态和客户端自身故障。
+ */
 export class G2rainHttpError extends Error {
   readonly code: string
   readonly source: HttpErrorSource

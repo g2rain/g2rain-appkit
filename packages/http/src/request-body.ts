@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 
-/** Encode once: both transport and signature consume the returned bytes and boundary. */
+/** 用 Response 编码一次 FormData。返回的字节和 boundary 同时给传输和签名使用。 */
 export async function buildMultipartFormDataBytes(form: FormData): Promise<{ body: ArrayBuffer; contentType: string }> {
   const response = new Response(form)
   const contentType = response.headers.get('Content-Type')
@@ -8,6 +8,11 @@ export async function buildMultipartFormDataBytes(form: FormData): Promise<{ bod
   return { body: await response.arrayBuffer(), contentType }
 }
 
+/**
+ * 在签名前把 body 定成最终字节。
+ * multipart 用 Response 编码一次，传输和 DPoP 共用同一个 boundary。
+ * 最后把 transformRequest 固定为恒等函数，避免重试时 Axios 再次改写已签名内容。
+ */
 export async function prepareRequestBody(config: InternalAxiosRequestConfig): Promise<void> {
   let data: unknown = config.data
   const contentType = String(config.headers.getContentType() ?? '').toLowerCase()
@@ -23,11 +28,11 @@ export async function prepareRequestBody(config: InternalAxiosRequestConfig): Pr
     for (const transform of transforms) data = transform.call(config, data, config.headers)
     config.data = data
   }
-  // No later Axios transformation may alter signed bytes, including on replay.
+  // 之后的 Axios 变换必须保持恒等，包括重放，不能再改已签名的字节。
   config.transformRequest = [(value: unknown) => value]
 }
 
-/** Reject unencoded forms instead of hashing an empty JSON object. */
+/** 未编码的 FormData 不能拿去签名，否则会把空对象当成正文。 */
 export async function toRequestBodyBytes(data: unknown): Promise<Uint8Array> {
   if (data instanceof FormData) throw new TypeError('Encode multipart data before signing')
   if (data == null) return new Uint8Array()

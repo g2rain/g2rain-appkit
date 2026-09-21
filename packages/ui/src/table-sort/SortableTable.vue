@@ -42,6 +42,7 @@ const { sortConfig, sortDialogVisible, getSortObject, getSortString } = useTable
   props.initialSort,
 )
 
+/** 列注册进多列排序对话框。同 prop 只登记一次，卸载时移除，避免对话框列出已销毁列。 */
 function registerColumn(column: SortColumn): void {
   if (!registeredColumns.value.some((item) => item.prop === column.prop)) {
     registeredColumns.value.push(column)
@@ -67,6 +68,7 @@ function isSortOrder(value: unknown): value is SortOrder {
   return value === 'ascending' || value === 'descending'
 }
 
+/** 表头排序并入多列状态：order 为空则移除该列，否则更新或追加，再抛出完整排序对象。 */
 function handleTableSortChange(value: { prop?: string; order?: unknown }): void {
   if (!value.prop) return
   const index = sortConfig.value.findIndex((item) => item.prop === value.prop)

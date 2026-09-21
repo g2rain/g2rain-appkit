@@ -40,6 +40,10 @@ function present(value: string | undefined): string | undefined {
   return value
 }
 
+/**
+ * 实例订阅的定向规则：优先比较 instanceId，否则比较 appKey。
+ * 两者都没有的消息视为广播，不投递给实例订阅，避免串到其他实例。
+ */
 function directedTo(message: MicroAppMessage, instanceId: string): boolean {
   const directedId = present(message.instanceId)
   if (directedId) return directedId === instanceId
@@ -55,6 +59,10 @@ function isMessage(value: unknown): value is MicroAppMessage {
     && 'data' in value
 }
 
+/**
+ * 用 CustomEvent 收发微前端消息。单个监听器抛错交给 onHandlerError，不中断其余监听器。
+ * 非浏览器环境必须传入 target。dispose 后不再派发，也不再接收。
+ */
 export function createBrowserEventAdapter<Message extends MicroAppMessage = MicroAppMessage>(
   options: BrowserEventAdapterOptions<Message> = {},
 ): EventAdapter<Message> {
@@ -98,6 +106,11 @@ export interface MessageCapability<Message extends MicroAppMessage = MicroAppMes
   subscribeInstance(instanceId: string, handler: (message: Message) => void | Promise<void>): () => void
 }
 
+/**
+ * bootstrap 之后可订会话级消息；mount 之后可按 instanceId 订定向消息。
+ * 退订会同时从适配器和 Scope 移除，实例或 Definition 释放时订阅自动失效。
+ * 适配器在 Definition Scope dispose 时释放，不跟随单个实例卸载。
+ */
 export function createMessageCapability<Message extends MicroAppMessage = MicroAppMessage>(
   adapter: EventAdapter<Message>,
 ): MessageCapability<Message> {

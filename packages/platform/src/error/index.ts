@@ -11,6 +11,7 @@ const SOURCES: readonly PlatformErrorSource[] = [
   'unknown',
 ]
 const SEVERITIES = ['info', 'warning', 'error', 'fatal'] as const
+/** 进入展示或上报前必须丢掉的字段，避免 token、私钥和客户端密钥继续扩散。 */
 const SENSITIVE = new Set([
   'token',
   'tokenKid',
@@ -114,6 +115,12 @@ function copyError(error: PlatformError): PlatformError {
   })
 }
 
+/**
+ * 统一成 PlatformError，并去掉 context 里的敏感字段。
+ * 带 code、source 以及 status 等请求字段的对象按 HTTP 错误保留后端码和请求标识；
+ * 这类对象没有生命周期阶段，phase 固定为 mount，只作占位。
+ * 其他 Error 记为 unknown，并保留 cause。
+ */
 export function normalizeError(error: unknown): PlatformError {
   if (error instanceof PlatformError) return copyError(error)
   if (isRecord(error) && hasHttpShape(error)) {
@@ -152,14 +159,19 @@ export function normalizeError(error: unknown): PlatformError {
   })
 }
 
+/** 展示、上报和标准动作失败不能替换原始错误。 */
 async function safe(task: () => void | Promise<void>): Promise<void> {
   try {
     await task()
   } catch {
-    // Presenter, reporter, and action failures must not replace the original error.
+    // 吞掉次级失败，调用方仍然拿到原始错误。
   }
 }
 
+/**
+ * 文案顺序：策略 messageKey 的翻译、error.message、backendCode、非 unknown 的 code、unknownMessage。
+ * 翻译抛错或得到空串时继续往后降级。
+ */
 async function displayMessage(
   error: PlatformError,
   resolution: ErrorResolution,
@@ -170,7 +182,7 @@ async function displayMessage(
       const translated = present(await options.translate(resolution.messageKey))
       if (translated) return translated
     } catch {
-      // Fall through to the fixed degradation order.
+      // 翻译失败时按固定顺序继续降级。
     }
   }
   return present(error.message)
@@ -180,6 +192,11 @@ async function displayMessage(
     ?? 'Unknown error'
 }
 
+/**
+ * 按策略展示、上报并执行标准动作，最后返回规范化后的错误。
+ * present 和 report 默认开启；没有注入 presenter、reporter 或 actions 时对应步骤跳过。
+ * 提供 translate 时声明依赖 i18n，保证文案引擎先于本能力就绪。
+ */
 export function createErrorCapability(options: ErrorCapabilityOptions = {}): ErrorCapability {
   return {
     id: 'error',

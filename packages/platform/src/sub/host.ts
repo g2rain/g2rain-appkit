@@ -78,6 +78,7 @@ function requireText(value: string | undefined, message: string): string {
   return text
 }
 
+/** 当前 Shell 的登录态由应用自己维护，这里丢弃 host 传入的 token，避免和本地会话冲突。 */
 function readAuth(props: Readonly<SubHostProps>, shell: ResolvedSubHost['shell']): SubLegacyAuth | undefined {
   const token = present(props.token)
   const tokenKid = present(props.tokenKid)
@@ -104,6 +105,14 @@ function readHost(props: Readonly<SubHostProps>): SubHostFields {
   return host
 }
 
+/**
+ * 把 qiankun props 解析成 RuntimeContext。
+ *
+ * 有 instanceId 视为当前 Shell：applicationCode、viewId、instanceId、appKey 都必须存在，
+ * appKey 必须等于 instanceId，applicationCode 必须等于应用默认值。
+ * 没有 instanceId 视为迁移期 Shell：用 appKey 作为 instanceId，viewId 缺省时也等于 appKey。
+ * locale 和 initialRoute 同时写入 context 与 patch，便于 mount 之后再走一次 update。
+ */
 export function resolveSubHostProps(
   props: Readonly<SubHostProps>,
   defaults: Readonly<SubHostDefaults>,
@@ -167,6 +176,7 @@ export function resolveSubHostProps(
   return resolved
 }
 
+/** 构造发往单个实例的消息。appKey 固定等于 instanceId，供仍按 appKey 过滤的宿主识别。 */
 export function createSubDirectedMessage<T>(
   identity: Readonly<SubMessageIdentity>,
   type: string,

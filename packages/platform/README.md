@@ -52,6 +52,7 @@ qiankun 生命周期、消息发送和 Token 交换仍由应用维护。
 ## Docs
 
 - [Platform 前端应用运行与主子协作方案](../../docs/architecture/platform-framework.md)
-- [Main Shell 与子应用开发手册](../../docs/development/platform-handbook.md)
+- [Main Shell 接入](../../docs/development/main-integration.md)
+- [业务 App 接入](../../docs/development/app-integration.md)
 - [HTTP 与 Runtime 契约](../../docs/packages/http-runtime-contract.md)
 - [Changelog](../../CHANGELOG.md)

@@ -63,12 +63,12 @@ StatusSwitch 默认 ACTIVE/INACTIVE、inlinePrompt=true，保留 apiMethod({next
 - 不再自动 ElMessage 弹出提示；旧 successMessage/errorMessage 改由 success/error 事件处理，避免重复提示。
 - OrganSelect 不读 Token Store；旧默认组织策略需要按上述 getPolicy 注入。
 - 缺失加载器不发网络请求，调用可选 onMissingProvider；不会猜测业务 Endpoint。
-- 保留原 apiMethod 作为单组件覆盖入口，现有业务 App 尚未自动替换本地副本。
+- 保留原 apiMethod 作为单组件覆盖入口；公共包不会自动替换业务 App 的本地副本，迁移仍由各 App 显式完成并验证。
 
 ## 扩展与来源
 
 `EntityDataProvider<T>` 统一 key/value 搜索与回显、signal、locale、query。`dataProviders.entities` 预留 User 等实体加载器，后续新增专门的交互组件，不自动推断实体字段。
 
-基准为本地 g2rain-member-app 的三个组件，并核对 CMS/Manager 组织版本差异；当前 member 工作目录没有 Git 元数据，来源记录为 working-tree，不虚构 commit。保留布尔字典匹配和组织策略，状态提交变化如上。
+基准来自 `g2rain-member-app` 的三个组件，并核对 CMS/Manager 组织版本差异；来源按当时工作树记录，不虚构 commit。保留布尔字典匹配和组织策略，状态提交变化如上。
 
-单元测试覆盖注入与 Prop 优先级、字典旧请求竞态、组织默认值、状态重复提交及失败语义；Playground 演示 Provider 组织、字典与状态成功/失败。真实 App 与 qiankun 联调尚未执行。
+单元测试覆盖注入与 Prop 优先级、字典旧请求竞态、组织默认值、状态重复提交及失败语义；Playground 演示 Provider 组织、字典与状态成功/失败。2026-09-20 用户确认 Appkit 在 `g2rain-member-app` 上已基本验证成功；该结论证明真实 App 接入方向，不等同于 Main Shell `/main` 接线或所有平台联合验收项完成。

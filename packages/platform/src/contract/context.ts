@@ -9,7 +9,9 @@ export interface RuntimeContext {
   viewId: string
   /** Main Shell RuntimeInstance 的唯一实例键 */
   instanceId: string
+  /** standalone 由应用自己管主题等宿主状态；integrated 表示运行在 Main Shell 中。 */
   mode: RuntimeMode
+  /** 应用路由前缀，不随单次 update 改变。 */
   contextPath: string
   locale?: string
   theme?: G2rainTheme

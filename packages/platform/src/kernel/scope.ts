@@ -1,5 +1,9 @@
 import { PlatformError } from '../contract/error.js'
 
+/**
+ * 可嵌套的释放域。add 返回取消登记的函数；dispose 按登记的逆序执行，并收集全部失败。
+ * child() 把子域的 dispose 登记到父域，父域释放时子域一并释放。
+ */
 export interface RuntimeScope {
   add(dispose: () => void | Promise<void>): () => void
   child(): RuntimeScope
@@ -11,6 +15,7 @@ interface ScopeEntry {
   dispose: () => void | Promise<void>
 }
 
+/** 已释放的 Scope 拒绝再登记。重复 dispose 是空操作，多条清理失败会合成 runtime.aggregate。 */
 export function createRuntimeScope(): RuntimeScope {
   const entries: ScopeEntry[] = []
   let disposed = false

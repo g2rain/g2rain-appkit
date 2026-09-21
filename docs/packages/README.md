@@ -104,7 +104,7 @@ packages/platform/src/
 
 公开子路径：`.`、`./sub`、`./main`、`./theme`、`./micro-app`、`./permission`、`./permission/vue`、`./loading`、`./i18n`、`./i18n/vue-i18n`、`./error`、`./http`。不提供 `/core` 或 `/vue`。
 
-`createSubPlatform` 仍只接受 `capabilities` 数组。`createStandardSubPlatform` 强制组合 I18n 和 Error，其他能力由调用方追加。壳与 Member 尚未接入。`./permission` 不导入 Vue；插件在 `./permission/vue`。`vue` 与 `vue-i18n` 都是可选 peer。包根、`/main`、`/sub`、`/permission`、`/i18n`、`/error` 和 `/http` 不导入 Vue。
+`createSubPlatform` 仍只接受 `capabilities` 数组。`createStandardSubPlatform` 强制组合 I18n 和 Error，其他能力由调用方追加。`g2rain-member-app` 已用标准 Preset 接入 `/sub`，由应用组合根继续创建 Vue、Pinia、Router、HTTP 和 qiankun 生命周期；Main Shell 尚未接入 `/main`。`./permission` 不导入 Vue；插件在 `./permission/vue`。`vue` 与 `vue-i18n` 都是可选 peer。包根、`/main`、`/sub`、`/permission`、`/i18n`、`/error` 和 `/http` 不导入 Vue。
 
 每项能力应可独立使用；所有全局监听 API 都应返回释放函数。具体 Store、消息 Processor 与 qiankun Props 读取仍由应用维护。详见 [Platform 前端应用运行与主子协作方案](../architecture/platform-framework.md)。
 

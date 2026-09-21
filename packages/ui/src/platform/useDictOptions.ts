@@ -3,6 +3,11 @@ import { useG2rainPlatformUi } from './provide'
 import type { DictLoader, DictQuery } from '../platform-data'
 import type { RemoteSelectOption } from '../remote-select/types'
 
+/**
+ * 字典选项。调用方已经传入 options 时直接使用，不再请求。
+ * loader、查询条件或 enabled 变化会作废上一次请求，避免旧响应覆盖新结果。
+ * 没有 loader 时通知 onMissingProvider，不抛出异常。
+ */
 export function useDictOptions(source: () => {
   options?: readonly RemoteSelectOption[]
   loader?: DictLoader

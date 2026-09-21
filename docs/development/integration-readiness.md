@@ -2,15 +2,17 @@
 
 本文区分库侧能力、试点接入与规模化发布三档门槛，避免把“阶段一构建通过”误判为“可正式推广”。
 
-## 1. 当前状态（2026-09-18）
+## 1. 当前状态（2026-09-20）
 
-Theme/UI 按用户确认记为局部试点闭环；HTTP 已在 `g2rain-member-app` 完成制品接入和验证，并删除原 `src/components/http` 兼容目录。应用专属单例、Mock、IAM Key、Loading 组合和刷新协调迁至 `src/runtime/http`，不属于公共包源码副本。当前 Appkit 仍处于 Member 整体验证期：Platform 的 Main/Sub 协作、Member 独立与 qiankun 运行必须与已验证的 Theme/UI/HTTP 共同闭环，之后才可发布任何 npm 包。
+Theme/UI、HTTP 与 Platform Sub 已在 `g2rain-member-app` 完成真实 App 接入。HTTP 原 `src/components/http` 兼容目录已删除；应用专属单例、Mock、IAM Key、Loading 组合和刷新协调保留在 `src/runtime/http`。Member 通过 `@g2rain/platform/sub` 的标准 Preset 统一独立模式与 qiankun 子应用生命周期，Vue、Pinia、Router、认证、资源加载和业务行为仍由应用组合根负责。
+
+2026-09-20 用户确认 Appkit 在 Member 上已基本验证成功，因此 B 档记为“基本通过”。该确认能够证明真实业务 App 的接入方向，但没有提供可逐项追溯的测试记录；未被单独确认的冒烟场景继续标为“待补记录”，不得据此推断 Main Shell 已接入 `@g2rain/platform/main`。Registry 发布、Main/Sub 联合验收和规模化推广仍未就绪。
 
 | 档位 | 状态 | 说明 |
 | --- | --- | --- |
 | A. 库内阶段一 | 已通过 | 四包实现、Playground、typecheck / test / build / pack:check |
-| B. Member 整体验证 | 进行中 | Member 已接入 Theme/UI/HTTP；HTTP 本地兼容组件已清理，Platform 与 Main Shell 的真实协作仍待验收 |
-| C. 正式 Registry 发布 | 未就绪 | 只有 B 档全部通过后才可发布；当前不发布任何 npm 包 |
+| B. Member 真实 App 试点 | 基本通过 | Theme/UI/HTTP/Platform Sub 已接入；用户确认整体基本验证成功，逐项测试记录待补齐 |
+| C. 正式 Registry 发布 | 未就绪 | Main Shell `/main` 接线、联合验收和发布准备未完成；当前不发布任何 npm 包 |
 | D. 平台闭环 | 未完成 | 模板 / CLI 未默认依赖；业务仓仍保留本地副本 |
 
 权威状态以 [`docs/project.yaml`](../project.yaml) 的 `validation` 为准。
@@ -23,7 +25,7 @@ Theme/UI 按用户确认记为局部试点闭环；HTTP 已在 `g2rain-member-ap
 - [x] Playground 覆盖 Theme、基础 UI、平台数据组件与 ThemeController
 - [x] `npm run pack:check` 通过
 
-## 3. B 档：Member 整体验证条件
+## 3. B 档：Member 真实 App 试点条件
 
 当前只允许使用本地 `npm pack` 制品开展 Member 整体验证，不发布到 Registry：
 
@@ -32,15 +34,19 @@ Theme/UI 按用户确认记为局部试点闭环；HTTP 已在 `g2rain-member-ap
 - [x] 试点应用（推荐 `g2rain-member-app`）完成 theme + ui 安装与兼容转发
 - [x] 试点应用 typecheck / build 通过
 - [x] `g2rain-member-app` 完成 `@g2rain/http` 接入、运行验证和本地 `components/http` 清理
-- [ ] 独立模式冒烟通过（静态 preview + theme CSS 已验证；登录后列表页待后端）
-- [ ] qiankun 挂载、卸载、重新挂载冒烟通过（生命周期已注入 `G2rainUi`；需 main-shell 联调）
-- [ ] 亮暗主题切换一致（`--g2-*` 已打入产物；主壳主题协作待验收）
+- [x] `g2rain-member-app` 使用 `@g2rain/platform/sub` 的 `createStandardSubPlatform`，独立与 qiankun 入口共用一份 Definition
+- [x] Member 不把 Vue、Pinia、Router、Token Store、HTTP Client 和 qiankun 适配器下沉到公共包
+- [x] 用户于 2026-09-20 确认 Appkit 在 Member 上已基本验证成功
+- [ ] 补充独立模式登录后列表页的可追溯冒烟记录
+- [ ] 补充 qiankun 挂载、更新、卸载、重新挂载及多实例隔离的可追溯记录
+- [ ] 补充亮暗主题切换及主壳主题协作的可追溯记录
 
-试点期间允许暂时保留本地兼容转发层；未验证通过前不删除全部本地实现。
+Member 可以保留明确属于应用层的 Adapter、Provider、Store、Mock 和组合根代码；不得把这些应用职责误判为公共包源码副本。已迁移能力的同名公共实现应在验证后删除或登记为有意偏差。
 
 ## 4. C 档：正式 Registry 发布条件
 
-- [ ] B 档的独立模式、qiankun 模式、卸载/重新挂载、主题协作和 Platform Main/Sub 联合验证全部通过
+- [ ] B 档待补的独立模式、qiankun 生命周期、多实例隔离和主题协作记录齐全
+- [ ] Main Shell 接入 `@g2rain/platform/main`，并完成 Platform Main/Sub 联合验证
 - [ ] `npm whoami` 确认具备 `@g2rain` scope 发布权限
 - [ ] 根目录 `LICENSE`、各包版本与 `CHANGELOG.md` 一致
 - [ ] 按依赖顺序发布：`theme` → `ui` / `http` / `platform`
@@ -50,7 +56,7 @@ Theme/UI 按用户确认记为局部试点闭环；HTTP 已在 `g2rain-member-ap
 
 ## 5. D 档：平台闭环条件
 
-- [ ] 试点应用删除已迁移能力的本地源码副本
+- [ ] 试点应用删除已迁移能力的本地源码副本，或把保留项登记为应用职责/有意偏差
 - [ ] 其他业务 App 按计划迁移或明确排期
 - [ ] `g2rain-app-template` 默认依赖公共包
 - [ ] `g2rain-app-cli` 生成逻辑与文档同步

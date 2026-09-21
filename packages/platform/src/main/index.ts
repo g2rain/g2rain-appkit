@@ -75,6 +75,7 @@ function copyProps(props: MainPublicProps): MainPublicProps {
   return copy
 }
 
+/** 字段出现才覆盖。值为 undefined 表示从已下发 props 中删除该字段，而不是保留旧值。 */
 function applyPublicPatch(current: MainPublicProps, patch: Readonly<RuntimeContextUpdate>): MainPublicProps {
   const next = copyProps(current)
   if ('locale' in patch) {
@@ -88,6 +89,10 @@ function applyPublicPatch(current: MainPublicProps, patch: Readonly<RuntimeConte
   return next
 }
 
+/**
+ * Main Shell 侧的公开 props 协调器。不持有 qiankun 句柄，只缓存已经下发的 props。
+ * appKey 固定写成 instanceId。updatePublicContext 只有在 runtimePort 成功后才提交快照。
+ */
 export function createMainPlatform(options: CreateMainPlatformOptions): MainPlatformCoordinator {
   const snapshots = new Map<string, MainPublicProps>()
 

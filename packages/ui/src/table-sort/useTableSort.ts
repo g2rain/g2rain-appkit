@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import type { SortColumn, SortItem } from './types'
 
+/** 多列排序状态。同一 prop 不能重复加入。getSortString 与 getSortObject 把顺序转成查询参数。 */
 export function useTableSort(
   columns: SortColumn[],
   initialSort: SortItem[] = [],

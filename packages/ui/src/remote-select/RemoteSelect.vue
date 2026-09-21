@@ -107,6 +107,7 @@ function getLabel(item: RemoteSelectOption): string {
     : String(label)
 }
 
+/** 按 value 合并选项。后出现的同值项覆盖先前项，用于保留已选中项的标签。 */
 function mergeOptions(
   base: readonly RemoteSelectOption[],
   incoming: readonly RemoteSelectOption[],
@@ -212,6 +213,11 @@ function filterLocally(query: string): RemoteSelectOption[] {
   )
 }
 
+/**
+ * 空关键字恢复预取结果或清空列表。与上次远程关键字相同则跳过。
+ * 已缓存选项能本地命中时不再发请求，并作废进行中的远程请求。
+ * 纯数字按 value 查，其余按 key 查。过期响应由序号丢弃，不写回 options。
+ */
 async function search(query: string): Promise<void> {
   const normalized = query.trim()
   if (!normalized) {
@@ -245,6 +251,7 @@ function handleRemoteSearch(query: string): void {
   debounceTimer = setTimeout(() => void search(query), props.debounceDelay)
 }
 
+/** 打开下拉时清掉上次关键字。已有预取结果就恢复，否则按 prefetchOnOpen 拉一次默认列表。 */
 function handleVisibleChange(visible: boolean): void {
   if (!visible) return
   lastRemoteQuery = undefined

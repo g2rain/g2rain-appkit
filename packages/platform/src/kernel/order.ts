@@ -1,6 +1,11 @@
 import { PlatformError } from '../contract/error.js'
 import type { RuntimeCapability } from '../sub/types.js'
 
+/**
+ * 按 dependsOn 做稳定拓扑排序。
+ * 无依赖的 Capability 保持注册顺序；同一批新就绪的节点也按注册顺序插入队列。
+ * 缺依赖或成环直接失败，不返回部分结果。
+ */
 export function sortCapabilities(capabilities: readonly RuntimeCapability[]): RuntimeCapability[] {
   const byId = new Map<string, RuntimeCapability>()
   const registrationIndex = new Map<string, number>()

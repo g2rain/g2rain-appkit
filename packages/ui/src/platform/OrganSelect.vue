@@ -32,9 +32,11 @@ const ui = useG2rainUi()
 const platform = useG2rainPlatformUi()
 const select = ref<RemoteSelectExpose>()
 const dataVersion = ref(0)
+/** 数据源、查询条件或 locale 变化时更换 key，强制内部 RemoteSelect 按新条件重新加载。 */
 watch(() => [props.apiMethod, props.query, ui.locale?.(), platform.dataProviders?.organ?.loadOptions], () => { dataVersion.value++ }, { deep: true })
 const policy = computed(() => platform.dataProviders?.organ?.getPolicy?.() ?? {})
 const normalize = (value: RemoteSelectValue) => value == null ? value : Number.isFinite(Number(value)) ? Number(value) : null
+/** 当前值为空且存在默认值时写入。已经有选中值时不覆盖。 */
 watch(() => [props.modelValue, props.defaultValue ?? policy.value.defaultValue] as const, ([current, fallback]) => {
   if (current == null && fallback != null) { emit('update:modelValue', fallback); emit('change', fallback) }
 }, { immediate: true })

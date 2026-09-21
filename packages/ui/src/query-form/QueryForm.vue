@@ -64,6 +64,7 @@ const model = defineModel<QueryFormData>({ required: true })
 const emit = defineEmits<{ search: [] }>()
 const { translate } = useG2rainUi()
 
+/** reactive 模型原地改字段；普通对象则整体替换，以同时支持两种 v-model。 */
 function updateField<K extends keyof QueryFormData>(
   key: K,
   value: QueryFormData[K],

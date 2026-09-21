@@ -1,6 +1,7 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios'
 import type { JWK } from 'jose'
 
+/** 后端统一响应包。status 为 0 或 200 视为成功，其余由客户端转成 G2rainHttpError。 */
 export interface Result<T = unknown> {
   requestId: string
   requestTime: string
@@ -12,10 +13,12 @@ export interface Result<T = unknown> {
 
 export type HttpClientType = 'default' | 'auth' | 'docs'
 
+/** force 为 true 时忽略本地仍有效的 access token，向认证服务重新换取。 */
 export interface EnsureAccessTokenOptions {
   force?: boolean
 }
 
+/** 应用提供的会话快照。客户端不保存 token，每次需要时重新读取。 */
 export interface HttpAuthSession {
   client: DpopClient | null
   isLogin: boolean
@@ -43,7 +46,7 @@ export interface DpopSignInput {
 }
 
 export interface HttpClientOptions {
-  /** Main-shell protocol: htu is config.url, without prepending baseURL. */
+  /** Main Shell 验签协议：htu 使用 config.url，不拼接 baseURL。 */
   dpop?: { applicationCode: string }
   baseURL?: string
   withAuth?: boolean

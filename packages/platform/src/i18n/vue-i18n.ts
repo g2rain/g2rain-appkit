@@ -1,6 +1,10 @@
 import type { I18n } from 'vue-i18n'
 import type { I18nEngineAdapter } from './index.js'
 
+/**
+ * 把 vue-i18n 适配成 I18nEngineAdapter。
+ * legacy 模式的 locale 是字符串，composition 模式是 ref，这里两种都读写。
+ */
 export function createVueI18nEngine<
   Messages extends Record<string, unknown>,
   DateTimeFormats extends Record<string, unknown>,
