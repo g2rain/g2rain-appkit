@@ -38,7 +38,9 @@
 
 `g2rain-member-app` 与 `g2rain-admin-shell` 已使用本地 `npm pack` 制品完成 Main/Sub 联调，且两端生产构建通过；这确认 Appkit 可用于真实主子应用组合，但不单独触发 Registry 发布。首次发布前必须重新查询目标包名、使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限。发布清单只包含 `@g2rain/platform`，不得包含已删除的旧工作包名。
 
-仓库的 `.github/workflows/publish-npm.yml` 仅在 GitHub Release 发布后执行。工作流挂在 GitHub Environment `npm`（应配置人工审批）。
+仓库的 `.github/workflows/publish-npm.yml` 在推送受保护的 `vX.Y.Z` Tag 后执行。它先校验 Tag 去掉 `v` 后的版本号与四个 workspace 包完全一致，完成 npm 发布后才自动创建 GitHub Release。工作流挂在 GitHub Environment `npm`（应配置人工审批）。
+
+发布时统一使用 `v1.0.0`，不使用裸 `1.0.0`。由于四包由一次发布候选共同发布，Tag 版本必须同时匹配 `@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/platform`。
 
 **首发引导（bootstrap）**
 
