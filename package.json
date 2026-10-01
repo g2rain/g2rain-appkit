@@ -2,6 +2,26 @@
   "name": "g2rain-appkit",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g2rain/g2rain-appkit.git"
+  },
+  "homepage": "https://github.com/g2rain/g2rain-appkit#readme",
+  "bugs": {
+    "url": "https://github.com/g2rain/g2rain/issues"
+  },
+  "contributors": [
+    {
+      "name": "Jagger",
+      "email": "g2rain_developer@163.com",
+      "url": "https://www.g2rain.com/"
+    },
+    {
+      "name": "Alpha",
+      "url": "https://www.g2rain.com/"
+    }
+  ],
   "type": "module",
   "workspaces": [
     "packages/*",

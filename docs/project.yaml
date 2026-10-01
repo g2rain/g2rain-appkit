@@ -4,6 +4,7 @@ name: g2rain-appkit
 family: platform-shared-library
 role: G2rain 前端公共契约与基础能力库
 repository: g2rain/g2rain-appkit
+license: Apache-2.0
 implementationType: frontend-shared-packages
 platformRole: supporting-library
 implementationPolicy: organization-singleton

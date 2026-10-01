@@ -3,9 +3,30 @@
   "version": "1.0.0",
   "description": "G2rain semantic design tokens and Element Plus theme mapping.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g2rain/g2rain-appkit.git",
+    "directory": "packages/theme"
+  },
+  "homepage": "https://github.com/g2rain/g2rain-appkit/tree/main/packages/theme#readme",
+  "bugs": {
+    "url": "https://github.com/g2rain/g2rain/issues"
+  },
+  "contributors": [
+    {
+      "name": "Jagger",
+      "email": "g2rain_developer@163.com",
+      "url": "https://www.g2rain.com/"
+    },
+    {
+      "name": "Alpha",
+      "url": "https://www.g2rain.com/"
+    }
+  ],
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "exports": {
     "./styles.css": "./dist/styles.css",
@@ -28,4 +49,3 @@
     "registry": "https://registry.npmjs.org/"
   }
 }
-

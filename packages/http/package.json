@@ -3,9 +3,30 @@
   "version": "1.0.0",
   "description": "Reusable G2rain Axios HTTP client and contracts.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g2rain/g2rain-appkit.git",
+    "directory": "packages/http"
+  },
+  "homepage": "https://github.com/g2rain/g2rain-appkit/tree/main/packages/http#readme",
+  "bugs": {
+    "url": "https://github.com/g2rain/g2rain/issues"
+  },
+  "contributors": [
+    {
+      "name": "Jagger",
+      "email": "g2rain_developer@163.com",
+      "url": "https://www.g2rain.com/"
+    },
+    {
+      "name": "Alpha",
+      "url": "https://www.g2rain.com/"
+    }
+  ],
   "type": "module",
   "files": [
     "dist",
+    "LICENSE",
     "!dist/**/*.test.*"
   ],
   "main": "./dist/index.js",

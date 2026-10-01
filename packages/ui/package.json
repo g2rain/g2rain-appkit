@@ -3,8 +3,31 @@
   "version": "1.0.0",
   "description": "Reusable G2rain Vue 3 components.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/g2rain/g2rain-appkit.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/g2rain/g2rain-appkit/tree/main/packages/ui#readme",
+  "bugs": {
+    "url": "https://github.com/g2rain/g2rain/issues"
+  },
+  "contributors": [
+    {
+      "name": "Jagger",
+      "email": "g2rain_developer@163.com",
+      "url": "https://www.g2rain.com/"
+    },
+    {
+      "name": "Alpha",
+      "url": "https://www.g2rain.com/"
+    }
+  ],
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
