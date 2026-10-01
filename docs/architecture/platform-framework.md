@@ -2,7 +2,7 @@
 
 - 状态：试点实施中
 - 日期：2026-09-20
-- 开发操作：[Main Shell 接入](../development/main-integration.md)、[业务 App 接入](../development/app-integration.md)
+- 开发操作：[Main Shell 接入](../integration/main.md)、中央 [Main Shell 契约](https://github.com/g2rain/g2rain/blob/main/docs/architecture/profiles/frontend-shell/main-shell-contract.md)、[业务 App 接入](../integration/app.md)
 - 目标包：`@g2rain/platform`（Kernel、`/sub`、标准 Preset 和独立 Capability 已落地，Member 已接入 `/sub`，Main Shell 尚未接入 `/main`）
 - 内部核心：Runtime Kernel
 - 当前基线：`packages/platform` 已提供包根共享契约、`createSubPlatform`、`createStandardSubPlatform`、`resolveSubHostProps`、`createMainPlatform`，以及 Theme、Loading、Permission、Micro App、I18n、Error、HTTP Capability。这些能力可单独导入。`g2rain-member-app` 已接入 `/sub` 并于 2026-09-20 经用户确认为基本验证成功；Main Shell 的 `/main` 协调端口接线和联合验收仍未完成。

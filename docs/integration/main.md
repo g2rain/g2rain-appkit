@@ -1,29 +1,37 @@
 # Main Shell 接入
 
-- 日期：2026-09-21
+- 日期：2026-09-21（2026-09-23 基线依赖补充 `@g2rain/http`）
 - 适用：`g2rain-main-shell`，以及新建主应用
-- 入口：`@g2rain/platform/main` 的 `createMainPlatform`
+- 入口：`@g2rain/platform/main` 的 `createMainPlatform`；HTTP 使用 `@g2rain/http`
+- 规范（AI / 生成器）：中央 [Main Shell 契约](https://github.com/g2rain/g2rain/blob/main/docs/architecture/profiles/frontend-shell/main-shell-contract.md)
+- 可复制提示词：[Main Shell AI Coding 提示词](main-shell-generation-prompt.md)
 
-CLI 和 `g2rain-app-template` 只生成业务 App，不生成主应用。主应用继续使用自己的仓库。
+本文是**人工执行**的接入手册（安装、接线示例）。实现不变式、禁止模式、**docs 最小树**与完成检查以中央 Main Shell 契约为准，此处不重复。新建 Shell 时必须按中央 `frontend-shell` 规范产出完整 `docs/`，不能只接包不写文档。交给 AI Coding 助手时优先使用生成提示词，并以中央契约裁决冲突。
 
-`g2rain-main-shell` 当前还没有安装 `@g2rain/platform`。下面是现在可以照着接的用法。
+CLI 默认 / `app` 生成业务 App（包内 `template/`，源仓 `g2rain-app-template`）。`create-g2rain-app shell` 生成 Main Shell 基线（包内 `template-shell/`，源仓 `g2rain-shell-template`）。不得用业务 App 模板冒充 Shell。
+
+`g2rain-main-shell` 当前还没有安装 `@g2rain/platform` / `@g2rain/http`。下面是现在可以照着接的用法。
 
 ## 1. 安装
 
 Registry 安装尚未提供，待发版后补充。
 
+Main Shell 基线需要 **platform + http**（壳管 Token 会话，请求栈走公共 HTTP）。`@g2rain/theme`、`@g2rain/ui` 本阶段不强制。
+
 现在使用本地制品。在 `g2rain-appkit` 目录：
 
 ```bash
 npm ci
+npm run build --workspace @g2rain/http
 npm run build --workspace @g2rain/platform
+npm pack --workspace @g2rain/http
 npm pack --workspace @g2rain/platform
 ```
 
-得到 `g2rain-platform-0.1.0.tgz`。拷到主应用后安装：
+得到 `g2rain-http-0.1.0.tgz`、`g2rain-platform-0.1.0.tgz`。拷到主应用 `kits/` 后安装：
 
 ```bash
-npm install ./kits/g2rain-platform-0.1.0.tgz
+npm install ./kits/g2rain-http-0.1.0.tgz ./kits/g2rain-platform-0.1.0.tgz
 ```
 
 `package.json` 写成：
@@ -31,12 +39,13 @@ npm install ./kits/g2rain-platform-0.1.0.tgz
 ```json
 {
   "dependencies": {
+    "@g2rain/http": "file:kits/g2rain-http-0.1.0.tgz",
     "@g2rain/platform": "file:kits/g2rain-platform-0.1.0.tgz"
   }
 }
 ```
 
-版本号以打出来的文件名为准。只接主应用端口时，不需要安装 `@g2rain/theme`、`@g2rain/ui`、`@g2rain/http`。
+版本号以打出来的文件名为准。HTTP 装配放在壳的 `runtime/http`：用 `@g2rain/http` 的工厂，注入壳的 Token Store / `ensureAccessToken` / SSO 失败处理；收敛或删除本地 `components/http`。细节见 [HTTP 与 Runtime 契约](../packages/http-runtime-contract.md)，可对照 `g2rain-member-app` 的 `src/runtime/http`。
 
 ## 2. 创建协调器
 

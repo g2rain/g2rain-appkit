@@ -4,7 +4,7 @@
 
 每个应用独立选择迁移时间。一次迁移一个能力域，并保持名称、Props、事件和行为尽可能不变。推荐以 `g2rain-member-app` 作为首个试点。
 
-在正式 Registry 版本可用前，试点应用应使用 `npm pack` 产物安装，不以 `npm link` 作为验收依据。接入门槛见[接入就绪清单](../development/integration-readiness.md)。Main Shell 与业务 App 的接法见[Main Shell 接入](../development/main-integration.md)和[业务 App 接入](../development/app-integration.md)，不在本指南里重复。
+在正式 Registry 版本可用前，试点应用应使用 `npm pack` 产物安装，不以 `npm link` 作为验收依据。接入门槛见[接入就绪清单](../integration/readiness.md)。Main Shell 与业务 App 的接法见[Main Shell 接入](../integration/main.md)和[业务 App 接入](../integration/app.md)；Main Shell 的 AI / 生成器规范见中央 [Main Shell 契约](https://github.com/g2rain/g2rain/blob/main/docs/architecture/profiles/frontend-shell/main-shell-contract.md)，不在本指南里重复。
 
 ## 2. 迁移顺序
 

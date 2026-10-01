@@ -6,7 +6,7 @@
 
 截至 2026-09-19，npm workspace、四个包目录和 Playground 已建立。`@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/platform` 均已具备首版实现。Platform 提供共享契约、Sub 生命周期 Kernel、Loading、Theme、微应用消息 Adapter 与权限 Provider；HTTP 包提供 Axios Client 工厂、语义化参数序列化、标准错误、Token 刷新单航班、DPoP 纯签名与资源释放。`http` 与 `platform` 互不依赖，由应用组合根装配。Token、登录行为、环境地址和权限数据均由应用注入。
 
-接入分档：库内阶段一已通过，当前统一处于 `g2rain-member-app` 验证期。Theme/UI/HTTP 的局部试点结论不等同于 Appkit 可发布；必须完成 Member 独立运行、qiankun 集成及 Platform 主子协作的整体验证，才会发布任何 `@g2rain/*` 包。验证期仅使用 `npm pack` 制品，不发布到 npm Registry。详见 [`docs/development/integration-readiness.md`](docs/development/integration-readiness.md) 与 [`CHANGELOG.md`](CHANGELOG.md)。
+接入分档：库内阶段一已通过，当前统一处于 `g2rain-member-app` 验证期。Theme/UI/HTTP 的局部试点结论不等同于 Appkit 可发布；必须完成 Member 独立运行、qiankun 集成及 Platform 主子协作的整体验证，才会发布任何 `@g2rain/*` 包。验证期仅使用 `npm pack` 制品，不发布到 npm Registry。详见 [`docs/integration/readiness.md`](docs/integration/readiness.md) 与 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 1. 背景
 
@@ -211,7 +211,7 @@ const unsubscribe = theme.subscribe(current => console.log(current))
 ```json
 {
   "name": "@g2rain/theme",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "files": [
     "dist"
@@ -306,7 +306,7 @@ app.use(G2rainUi, {
 ```json
 {
   "name": "@g2rain/ui",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "files": [
     "dist"
@@ -326,7 +326,7 @@ app.use(G2rainUi, {
   ],
   "peerDependencies": {
     "@element-plus/icons-vue": "^2.3.0",
-    "@g2rain/theme": "^0.1.0",
+    "@g2rain/theme": "^1.0.0",
     "element-plus": "^2.13.0",
     "vue": "^3.5.0"
   },
@@ -454,18 +454,18 @@ npm publish --workspace @g2rain/ui --access public
 - Minor：兼容性新组件或新参数，例如 `0.2.0`。
 - Major：不兼容 API 调整，例如 `1.0.0` 到 `2.0.0`。
 
-在 `1.0.0` 之前，业务应用建议使用 `~` 范围：
+在 `1.0.0` 稳定后，业务应用建议使用 `^` 范围：
 
 ```json
 {
   "dependencies": {
-    "@g2rain/theme": "~0.1.0",
-    "@g2rain/ui": "~0.1.0"
+    "@g2rain/theme": "^1.0.0",
+    "@g2rain/ui": "^1.0.0"
   }
 }
 ```
 
-稳定后可以改用 `^1.0.0`。公共包的 Breaking Change 必须包含迁移说明。
+公共包的 Breaking Change 必须包含迁移说明。
 
 ### 9.3 发布校验
 
@@ -528,7 +528,7 @@ export {
 
 ## 12. 验收标准
 
-分档门槛见 [`docs/development/integration-readiness.md`](docs/development/integration-readiness.md)。
+分档门槛见 [`docs/integration/readiness.md`](docs/integration/readiness.md)。
 
 **库内阶段一（已完成）应满足：**
 

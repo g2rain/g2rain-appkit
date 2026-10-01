@@ -1,0 +1,53 @@
+name: Publish npm packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify and publish
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+
+      # Trusted Publishing / modern publish path requires npm >= 11.5.1.
+      # Do not assume the Node image's bundled npm meets that floor.
+      - name: Use current npm
+        run: npm install --global npm@^11.5.1
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+      - run: npm run pack:check
+
+      # Bootstrap: Environment secret NPM_PUBLISH_TOKEN on `npm` (manual approval).
+      # Do NOT store this as a repository secret. After Trusted Publisher is set up
+      # for each @g2rain/* package, remove NPM_PUBLISH_TOKEN and switch to
+      # OIDC-only publish with --provenance (no NODE_AUTH_TOKEN).
+      - name: Publish packages (bootstrap Environment token)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          npm publish --workspace @g2rain/theme --access public
+          npm publish --workspace @g2rain/ui --access public
+          npm publish --workspace @g2rain/http --access public
+          npm publish --workspace @g2rain/platform --access public

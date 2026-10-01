@@ -5,7 +5,9 @@
 | `@g2rain/theme` | 设计变量、亮暗主题、基础样式、Element Plus 变量映射 | Vue、Pinia、业务 API、qiankun |
 | `@g2rain/ui` | 通用 Vue 组件和组合式函数 | 应用 Store、路由、领域接口 |
 | `@g2rain/http` | HTTP Client、序列化、签名、错误模型和通用拦截器 | 环境变量、具体 Token Store、登录跳转 |
-| `@g2rain/platform` | 共享契约、Sub 生命周期、权限、Loading、主题切换、微应用通信协议 | 业务页面、具体领域 API、Main Shell Store |
+| `@g2rain/platform` | 共享契约、Sub 生命周期、Main 协调端口、权限、Loading、主题切换、微应用通信协议 | 业务页面、具体领域 API、Main Shell Store |
+
+Main Shell 的生成 / 改造规范见中央 [Main Shell 契约](https://github.com/g2rain/g2rain/blob/main/docs/architecture/profiles/frontend-shell/main-shell-contract.md)；本仓提供基于 `/main` + `@g2rain/http` 的 [Main Shell 接入](../integration/main.md) 与 [AI Coding 提示词](../integration/main-shell-generation-prompt.md)。
 
 ## 1. `@g2rain/theme`
 

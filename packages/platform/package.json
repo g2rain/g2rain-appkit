@@ -1,6 +1,6 @@
 {
   "name": "@g2rain/platform",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "G2rain frontend application runtime and main/sub collaboration SDK.",
   "license": "Apache-2.0",
   "type": "module",

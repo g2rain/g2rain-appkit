@@ -4,7 +4,7 @@
 
 ## 开始前
 
-依次阅读 `README.md`、`docs/project.yaml`、`docs/index.md`、`docs/architecture/deviations.md`、任务相关专题文档，以及中央仓库 `g2rain/g2rain` 的 `docs/architecture/platform-libraries/g2rain-appkit.md`。涉及接入或发布时再读 `docs/development/integration-readiness.md` 和 `docs/operations/publishing.md`。
+依次阅读 `README.md`、`docs/project.yaml`、`docs/index.md`、`docs/architecture/deviations.md`、任务相关专题文档，以及中央仓库 `g2rain/g2rain` 的 `docs/architecture/platform-libraries/g2rain-appkit.md`。涉及本仓工程时再读 `docs/development/`；涉及接入或发布时再读 `docs/integration/readiness.md` 和 `docs/operations/publishing.md`。涉及 Main Shell 实现、改造或生成时，以中央 `frontend-shell/main-shell-contract.md` 为规范；`docs/integration/main.md` 仅作 appkit 人工接线步骤；可复制提示词见 `docs/integration/main-shell-generation-prompt.md`。
 
 ## 架构边界
 

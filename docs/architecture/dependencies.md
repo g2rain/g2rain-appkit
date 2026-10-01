@@ -17,4 +17,4 @@ Vue、Element Plus 和 `vue-i18n` 等宿主框架能力不得被不需要它们�
 
 ## 跨仓库关系
 
-`g2rain-app-template`、业务 App 与 `g2rain-main-shell` 是 Appkit 的消费者，不是其源码依赖。跨仓库公共约束以中央 [平台共享库登记](https://github.com/g2rain/g2rain/blob/feature/g2rain-architectur-init/docs/architecture/platform-libraries/g2rain-appkit.md) 为准；当前已验证的消费者和未完成项以 [接入就绪清单](../development/integration-readiness.md) 为准。
+`g2rain-app-template`、业务 App 与 `g2rain-main-shell` 是 Appkit 的消费者，不是其源码依赖。跨仓库公共约束以中央 [平台共享库登记](https://github.com/g2rain/g2rain/blob/feature/g2rain-architectur-init/docs/architecture/platform-libraries/g2rain-appkit.md) 为准；当前已验证的消费者和未完成项以 [接入就绪清单](../integration/readiness.md) 为准。

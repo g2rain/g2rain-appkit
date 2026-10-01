@@ -38,9 +38,11 @@ documentation:
   dependencies: docs/architecture/dependencies.md
   deviations: docs/architecture/deviations.md
   platformFramework: docs/architecture/platform-framework.md
-  platformHandbook: docs/development/platform-handbook.md
-  mainIntegration: docs/development/main-integration.md
-  appIntegration: docs/development/app-integration.md
+  platformHandbook: docs/integration/README.md
+  mainIntegration: docs/integration/main.md
+  mainShellContract: https://github.com/g2rain/g2rain/blob/main/docs/architecture/profiles/frontend-shell/main-shell-contract.md
+  mainShellGenerationPrompt: docs/integration/main-shell-generation-prompt.md
+  appIntegration: docs/integration/app.md
   packageBoundaries: docs/packages/README.md
   componentBaseline: docs/packages/component-migration-baseline.md
   platformDataComponents: docs/packages/platform-data-components.md
@@ -48,7 +50,7 @@ documentation:
   development: docs/development/repository-conventions.md
   buildAndTest: docs/development/build-and-test-contract.md
   definitionOfDone: docs/development/definition-of-done.md
-  integrationReadiness: docs/development/integration-readiness.md
+  integrationReadiness: docs/integration/readiness.md
   publicContracts: docs/api/public-contracts.md
   decisions: docs/decisions/README.md
   operations:
@@ -60,16 +62,16 @@ documentation:
   changelog: CHANGELOG.md
 
 validation:
-  status: member-app-pilot-basically-passed
-  reviewedAt: "2026-09-20"
+  status: main-sub-pilot-validated
+  reviewedAt: "2026-10-01"
   readiness:
     libraryPhaseOne: passed
-    memberAppPilot: basically-passed
-    pilotIntegration: basically-passed
+    memberAppPilot: passed
+    pilotIntegration: passed
     themeUiPilot: passed-by-user-confirmation
     httpPilot: passed
-    platformSubPilot: passed-by-user-confirmation
-    mainShellPlatformMainIntegration: pending
+    platformSubPilot: passed
+    mainShellPlatformMainIntegration: passed
     registryRelease: not-ready
     platformClosedLoop: incomplete
   note: >
@@ -78,7 +80,8 @@ validation:
     createStandardSubPlatform 统一独立模式与 qiankun 子应用生命周期。
     Theme/UI 按用户 2026-09-17 确认记录为试点通过；HTTP 已于 2026-09-18 经用户确认验证通过，
     member-app 的本地 components/http 已移除，应用装配迁至 runtime/http。
-    2026-09-20 用户确认 Appkit 在 member-app 上已基本验证成功；该结论用于确认真实 App 的 Sub
-    接入方向，不替代逐项测试记录，也不表示 Main Shell 已接入 @g2rain/platform/main。
-    Registry 发布、Main Shell 的 /main 端口接线、跨主子应用联合验收、模板/CLI 默认接入和其他 App
-    推广仍未完成，因此平台闭环保持 incomplete，当前不发布任何 npm 包。
+    2026-10-01 用户确认 g2rain-member-app 与 g2rain-admin-shell 使用 kits 本地制品完成联调，
+    覆盖独立模式、qiankun 生命周期、多实例隔离与主题协作；两端生产构建均已通过。Admin Shell
+    已接入 @g2rain/platform/main 与 @g2rain/http，Member 已接入 @g2rain/platform/sub 与 @g2rain/http。
+    Registry 发布仍需确认 @g2rain scope 权限、以确定提交重新打包候选制品、跑通 GitHub Actions 与发布审批；
+    模板/CLI 默认接入和其他 App 推广尚未完成，因此平台闭环保持 incomplete，当前不发布任何 npm 包。

@@ -52,4 +52,4 @@
 3. Playground 或最小使用示例。
 4. 相关架构或包文档更新。
 5. 根目录 `CHANGELOG.md` 与受影响包版本说明；不兼容变更附迁移方法。
-6. 若影响接入门槛或验证结论，更新 `docs/project.yaml` 的 `validation` 与[接入就绪清单](integration-readiness.md)。
+6. 若影响接入门槛或验证结论，更新 `docs/project.yaml` 的 `validation` 与[接入就绪清单](../integration/readiness.md)。

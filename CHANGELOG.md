@@ -1,10 +1,28 @@
 # Changelog
 
-本仓库各可发布包共享此变更记录。版本号以各包 `package.json` 为准；首版四个包均为 `0.1.0`。
+本仓库各可发布包共享此变更记录。版本号以各包 `package.json` 为准；当前四个包均为 `1.0.0`。
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本策略遵循语义化版本。
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-10-01
+
+首个正式 Registry 发布候选。四个包统一为 `1.0.0`（此前本地试点：`theme`/`http`/`platform` 为 `0.1.0`，`ui` 为 `0.1.1`）。
+
+### `@g2rain/platform`
+
+- **Breaking（`/sub`）**：`resolveSubHostProps` 删除旧壳兼容。不再接受仅有 `appKey`、缺少 `instanceId` 的 props；不再从 props 解析 `token`/`tokenKid`/`client`，并移除 `ResolvedSubHost.shell`、`ResolvedSubHost.auth` 与 `SubLegacyAuth`。宿主必须提供 `applicationCode`、`viewId`、`instanceId` 且 `appKey === instanceId`；认证改由应用 Auth Bridge。
+- 将未发布工作包直接改名为 `@g2rain/platform`，删除旧包名和兼容入口。
+- 包根只导出 `RuntimeContext`、`RuntimeMessage` 与 `PlatformError`，不再转出 Theme、Loading、Permission 或 Micro App，因此包根不导入 Vue。
+- 新增 `@g2rain/platform/sub` 的 `createSubPlatform`：按 `instanceId` 管理 Scope 和 Capability 生命周期。同一实例重复 mount 会失败，不同实例可以并存；失败按依赖逆序回滚。
+- 既有 `./theme`、`./loading`、`./permission`、`./micro-app` 控制器签名保持不变，并增加对应 Capability。
+- 新增 `@g2rain/platform/main` 的 `createMainPlatform`：公开 props 白名单、`notifyLocale`、`notifyAuthInvalid`，以及带 `appKey` 的定向消息。不发送主题变更消息。
+- 新增 `@g2rain/platform/sub` 的 `resolveSubHostProps` 与 `createSubDirectedMessage`：现行壳和新壳在进 Kernel 前变成同一份 Context。Token 不进入 Context。
+- 新增独立的 `/i18n`、`/i18n/vue-i18n`、`/error`、`/http`。`createStandardSubPlatform` 只强制组合 I18n 和 Error。这些入口不导入 Vue 或 `@g2rain/http`。
+- 挂载失败时卸载已创建的应用。实例消息按 `instanceId` 或迁移期 `appKey` 过滤。文档示例改为 `createStandardSubPlatform`。
+- Vue 权限插件改由 `@g2rain/platform/permission/vue` 导出，`/permission` 不再导入 Vue。`createMainPlatform` 增加 `releaseInstance`。HTTP Capability 在首次 `mount` 同步共享 locale。
+- `dispose` 先等待进行中的生命周期。`mount` 在 `await` 之后发现 Definition 正在销毁就停止，不再留下未追踪实例。
 
 ### Repository
 
@@ -23,28 +41,17 @@
 - RemoteSelect：清空搜索或命中本地缓存时作废进行中的远程请求，避免旧结果覆盖选项。
 - TableColumn：保留 `sortable="custom"`，不再被折成布尔 `true`，以支持服务端排序。
 - 组织、字典和状态组件改由 `@g2rain/ui/platform` 导出。根入口不再导出 `OrganSelect`、`DictSelect`、`DictText`、`StatusSwitch`。数据 Provider 改由 `G2rainPlatformUi` 注入。
+- peer `@g2rain/theme` 范围调整为 `^1.0.0`。
 
 ### Documentation
 
+- 文档目录拆分：`docs/development/` 仅保留本仓工程约定；消费方接入、就绪清单与 Main Shell AI 提示词迁至 `docs/integration/`。
+- 新增 [Main Shell AI Coding 提示词](docs/integration/main-shell-generation-prompt.md)，供助手按生成契约落地 `@g2rain/platform/main` + `@g2rain/http`；已索引到 `docs/index.md`、`docs/project.yaml`、生成契约与接入手册。
 - 对齐包设计、架构依赖图与当前实现（`http` 与 `platform` 互不依赖；平台三组件已进 `@g2rain/ui`）。
 - 补充接入就绪清单、迁移试点示例、根 LICENSE 与各包 README。
-- B 档试点：`g2rain-member-app` 已接入 Theme/UI/HTTP；HTTP 公共内核验证通过并删除本地 `components/http`，应用专属装配迁至 `runtime/http`。Runtime 与平台推广仍进行中。
+- B 档试点：`g2rain-member-app` 已接入 Theme/UI/HTTP；HTTP 公共内核验证通过并删除本地 `components/http`，应用专属装配迁至 `runtime/http`。
 - 将统一框架草案调整为最小 Platform 方案：包根只导出 Main/Sub 共享协议，`/main` 提供协调端口，`/sub` 提供框架无关的实例生命周期与 Scope；目标身份模型采用 `MicroAppDefinition → WorkspaceView → RuntimeInstance → RuntimeAdapter 私有 handle`，废止 `appKey` 同时承担应用、页面和实例身份的设计。Platform 不提供公开 `/core`、统一 `/vue` 或宿主专用入口，Vue、Pinia、Router、qiankun lifecycle 与独立启动逻辑继续由应用拥有。
-- 增加 [Main Shell 与子应用开发手册](docs/development/platform-handbook.md)，用于新建项目和改造现有主应用、业务子应用。子应用按一份 JavaScript 多次 `mount` 编写，不复制 RuntimeStore。
-
-### `@g2rain/platform`
-
-- 将未发布工作包直接改名为 `@g2rain/platform`，删除旧包名和兼容入口。
-- 包根只导出 `RuntimeContext`、`RuntimeMessage` 与 `PlatformError`，不再转出 Theme、Loading、Permission 或 Micro App，因此包根不导入 Vue。
-- 新增 `@g2rain/platform/sub` 的 `createSubPlatform`：按 `instanceId` 管理 Scope 和 Capability 生命周期。同一实例重复 mount 会失败，不同实例可以并存；失败按依赖逆序回滚。
-- 既有 `./theme`、`./loading`、`./permission`、`./micro-app` 控制器签名保持不变，并增加对应 Capability。
-- `g2rain-member-app` 仍引用旧制品，本次不接入。
-- 新增 `@g2rain/platform/main` 的 `createMainPlatform`：公开 props 白名单、`notifyLocale`、`notifyAuthInvalid`，以及带 `appKey` 的定向消息。不发送主题变更消息。Main Shell 尚未接入。
-- 新增 `@g2rain/platform/sub` 的 `resolveSubHostProps` 与 `createSubDirectedMessage`：现行壳和新壳在进 Kernel 前变成同一份 Context。Token 不进入 Context。壳与 Member 都尚未接入。
-- 新增独立的 `/i18n`、`/i18n/vue-i18n`、`/error`、`/http`。`createStandardSubPlatform` 只强制组合 I18n 和 Error。这些入口不导入 Vue 或 `@g2rain/http`。壳与 Member 都尚未接入。
-- 挂载失败时卸载已创建的应用。实例消息按 `instanceId` 或迁移期 `appKey` 过滤。文档示例改为 `createStandardSubPlatform`。
-- Vue 权限插件改由 `@g2rain/platform/permission/vue` 导出，`/permission` 不再导入 Vue。`createMainPlatform` 增加 `releaseInstance`。HTTP Capability 在首次 `mount` 同步共享 locale。
-- `dispose` 先等待进行中的生命周期。`mount` 在 `await` 之后发现 Definition 正在销毁就停止，不再留下未追踪实例。
+- 增加 [Main Shell 与子应用开发手册](docs/integration/README.md)，用于新建项目和改造现有主应用、业务子应用。子应用按一份 JavaScript 多次 `mount` 编写，不复制 RuntimeStore。
 
 ## [0.1.0] - 2026-09-13
 

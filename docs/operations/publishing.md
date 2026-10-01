@@ -8,7 +8,7 @@
 - Minor：向后兼容的新能力。
 - Major：不兼容变更。
 
-在 `1.0.0` 前，业务应用建议使用 `~0.x.y`；稳定后可使用 `^1.x.y`。版本变更必须同步根目录 [`CHANGELOG.md`](../../CHANGELOG.md)。
+在 `1.0.0` 前，业务应用建议使用 `~0.x.y`；稳定后可使用 `^1.x.y`。版本变更必须同步根目录 [`CHANGELOG.md`](../../CHANGELOG.md)。当前四个包均为 `1.0.0`。
 
 ## 2. 发布前检查
 
@@ -18,7 +18,7 @@
 4. `npm pack` / `npm run pack:check` 检查文件清单。
 5. Playground 安装制品并构建。
 6. 真实试点应用在独立模式和 qiankun 模式验证。
-7. 确认版本号、`CHANGELOG.md`、迁移说明和[接入就绪清单](../development/integration-readiness.md)一致。
+7. 确认版本号、`CHANGELOG.md`、迁移说明和[接入就绪清单](../integration/readiness.md)一致。
 8. 确认根 `LICENSE` 与各包 `license` 字段一致（Apache-2.0）。
 
 在 C 档条件未满足前，可对内使用 `npm pack` 试点，但不得宣称已完成正式 Registry 推广。
@@ -36,9 +36,26 @@
 }
 ```
 
-当前公共包尚未正式发布，且不会在 Member 整体验证完成前发布任何 `@g2rain/*` 包。验证期间仅使用 `npm pack` 制品；Theme/UI/HTTP 的局部试点结论不单独触发发布。首次发布前必须重新查询目标包名、使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限。发布清单只包含 `@g2rain/platform`，不得包含已删除的旧工作包名。
+`g2rain-member-app` 与 `g2rain-admin-shell` 已使用本地 `npm pack` 制品完成 Main/Sub 联调，且两端生产构建通过；这确认 Appkit 可用于真实主子应用组合，但不单独触发 Registry 发布。首次发布前必须重新查询目标包名、使用实际发布账号执行 `npm whoami`，并确认该账号具有 `@g2rain` scope 权限。发布清单只包含 `@g2rain/platform`，不得包含已删除的旧工作包名。
 
-推荐发布顺序：
+仓库的 `.github/workflows/publish-npm.yml` 仅在 GitHub Release 发布后执行。工作流挂在 GitHub Environment `npm`（应配置人工审批）。
+
+**首发引导（bootstrap）**
+
+1. 在 Environment `npm` 中创建 Secret `NPM_PUBLISH_TOKEN`（npm automation/publish token）。**不要**放在普通 Repository Secret。
+2. 工作流在 `npm ci` 前执行 `npm install --global npm@^11.5.1`（Trusted Publishing / 现代发布要求 npm >= 11.5.1）。
+3. 发布步骤使用 `NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}`。
+
+**目标态（Trusted Publishing）**
+
+在 npm 为四个包分别登记同一 GitHub 仓库和该工作流为 Trusted Publisher 后：
+
+1. 删除 Environment 中的 `NPM_PUBLISH_TOKEN`。
+2. 将发布步骤改回 OIDC：保留 `id-token: write`，去掉 `NODE_AUTH_TOKEN`，并为各包加上 `--provenance`。
+
+先在受保护分支或 PR 确认 `.github/workflows/ci.yml` 成功，再创建 Release；工作流仍会重新执行全部发布前检查。
+
+推荐发布顺序（与工作流一致）：
 
 ```bash
 npm publish --workspace @g2rain/theme --access public

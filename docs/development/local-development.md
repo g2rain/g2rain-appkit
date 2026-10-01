@@ -25,7 +25,7 @@ Playground 不是业务示例应用，不应引入真实业务 Store 或领域 A
 
 ## 3. 真实应用联调
 
-发布前使用 `npm pack` 生成与正式发布结构一致的压缩包，并在试点应用中安装。不要用 `npm link` 的成功代替发布验证，它可能掩盖 `exports`、`files` 和依赖声明问题。迁移步骤见[应用迁移指南](../migration/application-migration.md)；分档门槛见[接入就绪清单](integration-readiness.md)。
+发布前使用 `npm pack` 生成与正式发布结构一致的压缩包，并在试点应用中安装。不要用 `npm link` 的成功代替发布验证，它可能掩盖 `exports`、`files` 和依赖声明问题。迁移步骤见[应用迁移指南](../migration/application-migration.md)；分档门槛见[接入就绪清单](../integration/readiness.md)。
 
 至少验证：
 

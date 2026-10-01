@@ -5,7 +5,6 @@ export type {
   SubHostDefaults,
   SubHostFields,
   SubHostProps,
-  SubLegacyAuth,
   SubMessageIdentity,
 } from './host.js'
 export { createStandardSubPlatform } from './preset.js'

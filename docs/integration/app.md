@@ -3,12 +3,12 @@
 - 日期：2026-09-21
 - 适用：新建业务 App，以及 `g2rain-member-app`、`g2rain-manager-app`、`g2rain-department-app`
 - 工具：`create-g2rain-app`（源码仓库 `g2rain-app-cli`）
-- 模板：`g2rain-app-template`，由 CLI 复制，不单独当业务项目安装
+- 模板：CLI 项目内的 `template/`。`create` 复制这一份；`g2rain-app-template` 只在维护 CLI、执行 `npm run sync:template` 时同步进来
 - 运行时入口：`@g2rain/platform/sub`
 
 ## 1. 安装
 
-Registry 安装尚未提供。`@g2rain/*`、`create-g2rain-app` 和 `g2rain-app-template` 发版后的安装命令待补充。
+Registry 安装尚未提供。`@g2rain/*` 和 `create-g2rain-app` 发版后的安装命令待补充。`g2rain-app-template` 不单独安装。
 
 下面是现在能用的装法。Node.js 需要 `>=22`。
 
@@ -54,32 +54,9 @@ import '@g2rain/ui/style.css'
 
 ### 1.2 CLI
 
-在 `g2rain-app-cli` 目录：
+创建项目、生成页面和生成资源配置都用 `create-g2rain-app` / `g2rain-app`。步骤、参数和当前本地安装见 [CLI 使用手册](https://github.com/g2rain/g2rain-app-cli/blob/main/docs/development/usage.md)。
 
-```bash
-npm ci
-npm run build
-```
-
-到目标父目录执行。两个命令相同：
-
-```bash
-node <g2rain-app-cli>/dist/index.js g2rain-order-app --context-path order
-node <g2rain-app-cli>/dist/index.js create g2rain-order-app --context-path order
-```
-
-交互式省略参数即可。项目名和 Context Path 都给出时不再提问。Context Path 不要带前导斜杠；`g2rain-order-app` 省略该参数时默认为 `order`。
-
-目标目录已存在会直接失败，不会覆盖。CLI 不执行 `npm install`，也不初始化 Git。
-
-使用模板源仓而不是 CLI 包内快照时：
-
-```powershell
-$env:G2RAIN_TEMPLATE_PATH = 'D:\github\g2rain-app-template'
-node <g2rain-app-cli>/dist/index.js g2rain-order-app --context-path order
-```
-
-已有 App 把 CLI 装成开发依赖，供 `generate` 和 `build-config` 使用：
+当前没有 Registry 版本。在 `g2rain-app-cli` 目录执行 `npm ci`、`npm run build`、`npm link` 之后，可以使用这两个命令。已有 App 也可以把 CLI 装成开发依赖：
 
 ```json
 {
@@ -89,19 +66,11 @@ node <g2rain-app-cli>/dist/index.js g2rain-order-app --context-path order
 }
 ```
 
-`g2rain-member-app` 的资源配置脚本是：
-
-```json
-{
-  "scripts": {
-    "build:config": "node ./node_modules/create-g2rain-app/dist/index.js build-config"
-  }
-}
-```
+然后在 App 根目录用 `npx g2rain-app`。
 
 ### 1.3 模板
 
-不要把 `g2rain-app-template` 克隆下来当作业务 App。新建项目用上一节的 CLI。模板里的 `{{PROJECT_NAME}}` 和 `{{CONTEXT_PATH}}` 由 CLI 替换。
+`create-g2rain-app` 复制的是 CLI 项目里的 `template/`，不要再克隆 `g2rain-app-template`。模板里的 `{{PROJECT_NAME}}` 和 `{{CONTEXT_PATH}}` 由这次复制时替换。
 
 当前模板 `package.json` 仍引用 `file:../g2rain-appkit/` 下的压缩包，并且包含已经不存在的 `@g2rain/runtime`。生成后的项目不要沿用这些依赖，改成第 1.1 节的 `kits/` 安装，再执行 `npm install`。模板不复制 lockfile，第一次安装不要用 `npm ci`。
 
@@ -114,23 +83,17 @@ node <g2rain-app-cli>/dist/index.js g2rain-order-app --context-path order
 | `npm run dev` | 启动 Vite |
 | `npm run build` | `vue-tsc` 后构建 `dist` |
 | `npm run preview` | 预览构建结果 |
-| `npm run build:generate -- --tables=<表名>` | 按 `scripts/database.sql` 生成页面骨架 |
-| `npm run build:config` | 写出页面和页面元素资源 JSON |
-
-页面生成会覆盖 `src/views/<表名>/` 下的 `index.vue`、`api.ts`、`type.ts`、`mock.ts`，并更新 `src/views/route-map.ts`。执行前先看 Git 状态。
+| `g2rain-app generate --tables=<表名>` | 按 `scripts/database.sql` 生成页面骨架 |
+| `g2rain-app build-config` | 写出页面和页面元素资源 JSON |
 
 ```bash
-npm run build:generate -- --tables=dict
-npm run build:generate -- --tables=dict,medicine_users
-npm run build:generate -- --tables=dict --no-mock --no-route
-```
-
-也可以直接调用 CLI。在 App 根目录：
-
-```bash
+g2rain-app generate --tables=dict
 g2rain-app generate --tables=dict,medicine_users
+g2rain-app generate --tables=dict --no-mock --no-route
 g2rain-app build-config
 ```
+
+`generate` 会覆盖 `src/views/<表名>/` 下的 `index.vue`、`api.ts`、`type.ts`、`mock.ts`，并更新 `src/views/route-map.ts`。执行前先看 Git 状态。
 
 `build-config` 写出：
 
@@ -216,7 +179,7 @@ export async function unmount(props) {
 }
 ```
 
-`resolveSubHostProps` 接受当前主应用的 `instanceId`，也接受只有 `appKey` 的旧 props。`token`、`tokenKid`、`client` 从返回值的 `auth` 读取并写入应用自己的 Token Store，不要拷进 `definition.mount` 的 `context`。
+`resolveSubHostProps` 要求宿主下发 `applicationCode`、`viewId`、`instanceId`，且 `appKey === instanceId`。Token 不经公开 props；集成模式通过应用侧 Auth Bridge（定向消息）写入 Token Store，不要把认证载荷拷进 `definition.mount` 的 `context`。
 
 独立模式在 `main.ts` 里调用同一个 definition。容器用 `#app`，`mode` 为 `standalone`：
 
