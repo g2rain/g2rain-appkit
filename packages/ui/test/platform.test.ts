@@ -14,6 +14,7 @@ function plugins(options: G2rainPlatformUiOptions & { locale?: () => string | un
     [G2rainUi, { locale: options.locale }],
     [G2rainPlatformUi, {
       dataProviders: options.dataProviders,
+      permission: options.permission,
       onMissingProvider: options.onMissingProvider,
     }],
   ]
@@ -74,6 +75,36 @@ describe('platform components', () => {
     finish()
     await flushPromises()
     expect(wrapper.emitted('update:modelValue')).toEqual([['ACTIVE']])
+    wrapper.unmount()
+  })
+  it('disables the switch and skips submit when the permission is not enabled', async () => {
+    const apiMethod = vi.fn(async () => {})
+    const permission = { isEnabled: vi.fn((code: string) => code === 'demo:status_update') }
+    const denied = mount(StatusSwitch, {
+      props: { modelValue: 'INACTIVE', permission: 'other:status_update', apiMethod },
+      global: { plugins: plugins({ permission }), stubs: { ElSwitch: true } },
+    })
+    expect(denied.findComponent(ElSwitch).props('disabled')).toBe(true)
+    denied.findComponent(ElSwitch).vm.$emit('change', 'ACTIVE')
+    await flushPromises()
+    expect(apiMethod).not.toHaveBeenCalled()
+    denied.unmount()
+
+    const allowed = mount(StatusSwitch, {
+      props: { modelValue: 'INACTIVE', permission: 'demo:status_update', apiMethod },
+      global: { plugins: plugins({ permission }), stubs: { ElSwitch: true } },
+    })
+    expect(allowed.findComponent(ElSwitch).props('disabled')).toBe(false)
+    allowed.unmount()
+  })
+  it('treats a missing permission provider as not permitted', () => {
+    const onMissingProvider = vi.fn()
+    const wrapper = mount(StatusSwitch, {
+      props: { modelValue: 'INACTIVE', permission: 'demo:status_update', apiMethod: vi.fn() },
+      global: { plugins: plugins({ onMissingProvider }), stubs: { ElSwitch: true } },
+    })
+    expect(wrapper.findComponent(ElSwitch).props('disabled')).toBe(true)
+    expect(onMissingProvider).toHaveBeenCalledWith('permission')
     wrapper.unmount()
   })
   it('preserves the model after failure and never submits on external model updates', async () => {

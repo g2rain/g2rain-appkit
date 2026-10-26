@@ -1,10 +1,10 @@
 <template>
-  <el-switch :model-value="modelValue" :disabled="disabled || loading" :loading="loading"
+  <el-switch :model-value="modelValue" :disabled="disabled || loading || !permitted" :loading="loading"
     :active-value="activeValue" :inactive-value="inactiveValue" :inline-prompt="inlinePrompt"
     :active-text="label(activeValue)" :inactive-text="label(inactiveValue)" @change="change" />
 </template>
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { ElSwitch } from 'element-plus'
 import { useG2rainUi } from '../context'
 import { useG2rainPlatformUi } from './provide'
@@ -20,6 +20,8 @@ const props = withDefaults(defineProps<{
   options?: readonly { label: string; value: StatusValue }[]
   fetchOptions?: DictLoader
   disabled?: boolean
+  /** 页面元素权限码；有值时按注入的权限判断能否操作，build:config 扫描收集 */
+  permission?: string
   inlinePrompt?: boolean
   apiMethod?: (params: { nextValue: StatusValue; prevValue: StatusValue }) => Promise<void>
   submit?: (next: StatusValue, previous: StatusValue) => Promise<void>
@@ -34,6 +36,15 @@ const emit = defineEmits<{
 const ui = useG2rainUi()
 const platform = useG2rainPlatformUi()
 const loading = ref(false)
+/** 未传 permission 不受控；传了但应用未注入权限时一律不可操作 */
+const permitted = computed(() => {
+  if (!props.permission) return true
+  if (!platform.permission) {
+    platform.onMissingProvider?.('permission')
+    return false
+  }
+  return platform.permission.isEnabled(props.permission)
+})
 let disposed = false
 onBeforeUnmount(() => { disposed = true })
 const { items } = useDictOptions(() => ({
@@ -48,7 +59,7 @@ function label(value: StatusValue) {
 }
 /** 请求成功后才改 v-model。期间外部已改值，或组件已卸载，则不再回写，避免覆盖更新的状态。 */
 async function change(nextValue: StatusValue) {
-  if (props.disabled || loading.value || nextValue === props.modelValue) return
+  if (props.disabled || !permitted.value || loading.value || nextValue === props.modelValue) return
   const prevValue = props.modelValue
   loading.value = true
   try {
