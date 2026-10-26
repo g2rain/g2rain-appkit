@@ -15,6 +15,8 @@ app.use(G2rainUi, {
 app.use(G2rainPlatformUi, {
   // 应用可仅在开发环境提供诊断回调。
   onMissingProvider: name => console.warn(`Missing ${name} provider`),
+  // 页面元素权限：StatusSwitch 传 permission 时按此判断能否操作
+  permission: { isEnabled: code => PageElementPermission.isEnabled(code) },
   dataProviders: {
     organ: {
       loadOptions: ({ key, value, signal, query }) =>
@@ -55,7 +57,7 @@ OrganSelect 保留数值 ID、organId/organName 默认字段、200px 宽度、30
 
 DictText 保留 value、usageCode、apiMethod、valueKey=code、labelKey=name、placeholder='-'；新增 dictCode 和 options。优先级 options（包括空数组）> apiMethod > Provider。数字按字符串匹配，布尔值兼容 true/1/yes/y、false/0/no/n，未匹配值显示原值。响应值、语言与字典范围变化，取消旧请求；错误通过 error 发出。默认 Slot 提供 text/loading。
 
-StatusSwitch 默认 ACTIVE/INACTIVE、inlinePrompt=true，保留 apiMethod({nextValue,prevValue})、success/error 载荷。新增 submit(next,previous)，优先于 apiMethod；均不提供时仅本地切换。显式 options 优先于 fetchOptions 和字典 Provider，usageCode/dictCode 指定字典；字典加载错误触发 load-error。提交时禁用重复操作，失败保持原值；父组件在等待期间更改 modelValue 时不覆盖新的状态，卸载后不再发事件。
+StatusSwitch 默认 ACTIVE/INACTIVE、inlinePrompt=true，保留 apiMethod({nextValue,prevValue})、success/error 载荷。新增 submit(next,previous)，优先于 apiMethod；传 permission（页面元素权限码）时按注入的 permission.isEnabled 计算 disabled，未注入则不可操作并触发 onMissingProvider('permission')；均不提供时仅本地切换。显式 options 优先于 fetchOptions 和字典 Provider，usageCode/dictCode 指定字典；字典加载错误触发 load-error。提交时禁用重复操作，失败保持原值；父组件在等待期间更改 modelValue 时不覆盖新的状态，卸载后不再发事件。
 
 ## 有意调整与迁移
 

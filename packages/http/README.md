@@ -37,6 +37,15 @@ DPoP 默认关闭，迁移原有受保护业务 Client 时必须显式配置 `dp
 
 `onError` / `authErrorHandler` 的异常不替换原始请求错误。刷新失败的并发等待者收到同一个 G2rainHttpError，原始原因保存在 cause。dispose 不会撤销已经进入应用刷新回调的操作，但会阻止后续通知和请求重放。
 
+SSE 流式请求用 `client.sse(url, data, onEvent, config)`，默认 POST，与普通请求共用同一套拦截器（登录态、Bearer、语言、DPoP 签名、401 刷新重放），只是改用 fetch 适配器读流并关闭超时。每个事件的 `data` 按 JSON 解析后交给 `onEvent`，流结束时 resolve；失败响应体按后端 Result 解析为 G2rainHttpError；用 `config.signal` 取消，取消时以 CanceledError 结束。
+
+```ts
+await client.sse<TurnEvent, TurnRequest>('/harness/v1/chat/completions', req, event => handle(event), {
+  headers: { 'X-TRACE-ID': traceId },
+  signal: controller.signal,
+})
+```
+
 当前状态：库内 19 项测试、类型检查和构建通过；Member 的 Token/Mock/错误提示适配与真实网关联调尚未验收。不要将纯函数验签测试等同于后端联调通过。
 
 ## Docs

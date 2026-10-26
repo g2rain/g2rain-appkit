@@ -28,6 +28,32 @@ function normalize(error: unknown): G2rainHttpError {
   }
   return new G2rainHttpError('HTTP client failed', { code: 'HTTP_CLIENT_FAILED', source: 'client', cause: error })
 }
+/**
+ * 流式请求失败时响应体仍是流：读出并按 JSON 解析，交给 normalize 识别后端 Result 与登录态错误码。
+ */
+async function readStreamBody(error: unknown): Promise<void> {
+  const response = axios.isAxiosError(error) ? error.response : undefined
+  if (!(response?.data instanceof ReadableStream)) return
+  const text = await new Response(response.data).text()
+  try { response.data = JSON.parse(text) } catch { response.data = text }
+}
+/**
+ * 按 SSE 格式以空行切分事件，合并每个事件的 data 行后按 JSON 交给回调。
+ * 返回末尾尚未收完的文本，与下一段数据拼接后继续解析。
+ */
+function dispatchEvents<T>(buffer: string, onEvent: (event: T) => void): string {
+  let rest = buffer.replace(/\r\n/g, '\n')
+  let separator: number
+  while ((separator = rest.indexOf('\n\n')) >= 0) {
+    const data = rest.slice(0, separator).split('\n')
+      .filter(line => line.startsWith('data:'))
+      .map(line => line.slice(5).trimStart())
+      .join('\n')
+    rest = rest.slice(separator + 2)
+    if (data) onEvent(JSON.parse(data) as T)
+  }
+  return rest
+}
 /** 通知失败不能替换原来的请求失败。 */
 async function notify(callback: (() => void | Promise<void>) | undefined): Promise<void> {
   try { await callback?.() } catch { /* 通知失败不能替换原来的请求失败。 */ }
@@ -134,6 +160,7 @@ export function createHttpClient<Direct extends boolean = false>(options: HttpCl
    */
   async function failure(error: unknown, config?: RequestConfig): Promise<AxiosResponse> {
     if (axios.isCancel(error)) throw error
+    await readStreamBody(error)
     const normalized = normalize(error)
     if (withAuth && normalized.source === 'auth') {
       assertActive(config)
@@ -175,6 +202,32 @@ export function createHttpClient<Direct extends boolean = false>(options: HttpCl
       throw normalized
     }
   }
+  /**
+   * SSE 流式请求：与普通请求共用拦截器（登录态、Bearer、语言、DPoP、401 刷新重放），
+   * 只是改用 fetch 适配器读流，并关闭超时，由调用方的 signal 结束。默认 POST。
+   */
+  async function sse<T, Body>(url: string, data: Body | undefined, onEvent: (event: T) => void, config: AxiosRequestConfig<Body> = {}): Promise<void> {
+    assertActive()
+    try {
+      const response = await instance.request<ReadableStream<BufferSource>>({
+        method: 'POST', adapter: 'fetch', ...config, url, data,
+        headers: { Accept: 'text/event-stream', ...config.headers },
+        responseType: 'stream', timeout: 0,
+      })
+      const reader = response.data.pipeThrough(new TextDecoderStream()).getReader()
+      let buffer = ''
+      for (;;) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer = dispatchEvents(buffer + value, onEvent)
+      }
+    } catch (error) {
+      if (axios.isCancel(error) || config.signal?.aborted) throw new CanceledError()
+      const normalized = normalize(error)
+      if (!disposed) await notify(() => options.onError?.(normalized))
+      throw normalized
+    }
+  }
   const client: HttpClient<Direct> = {
     request,
     get: (url, params, config) => request({ ...config, url, method: 'GET', params }),
@@ -182,6 +235,7 @@ export function createHttpClient<Direct extends boolean = false>(options: HttpCl
     post: (url, data, config) => request({ ...config, url, method: 'POST', data }),
     put: (url, data, config) => request({ ...config, url, method: 'PUT', data }),
     patch: (url, data, config) => request({ ...config, url, method: 'PATCH', data }),
+    sse,
   }
   return { axios: instance, client, dispose() { disposed = true; instance.interceptors.request.eject(requestId); instance.interceptors.response.eject(responseId) } }
 }

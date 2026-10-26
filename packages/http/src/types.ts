@@ -71,6 +71,11 @@ export interface HttpClient<Direct extends boolean = false> {
   put<T = unknown, Body = unknown>(url: string, data?: Body, config?: AxiosRequestConfig<Body>): Promise<HttpResponse<T, Direct>>
   patch<T = unknown, Body = unknown>(url: string, data?: Body, config?: AxiosRequestConfig<Body>): Promise<HttpResponse<T, Direct>>
   delete<T = unknown>(url: string, params?: Record<string, unknown>, config?: AxiosRequestConfig): Promise<HttpResponse<T, Direct>>
+  /**
+   * SSE 流式请求，默认 POST；每个事件的 data 按 JSON 解析后交给 onEvent，流结束时 resolve。
+   * 认证与普通请求一致；用 config.signal 取消，取消时以 CanceledError 结束。
+   */
+  sse<T = unknown, Body = unknown>(url: string, data: Body | undefined, onEvent: (event: T) => void, config?: AxiosRequestConfig<Body>): Promise<void>
 }
 
 export interface HttpClientInstance<Direct extends boolean = false> {
