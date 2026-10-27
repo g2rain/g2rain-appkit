@@ -142,7 +142,9 @@ const loading = createLoadingController({
     return { close: () => handle.close() }
   },
 })
+// 注入 provider 并注册 v-permission：ENABLED 可用、VISIBLE 显示但禁用、无状态隐藏
 app.use(createPermissionPlugin({ provider: permissionStore }))
+// 非组件场景（如 @g2rain/ui 的 StatusSwitch 权限）用 isPageElementEnabled(provider, code)
 
 // 卸载时：
 theme.dispose()

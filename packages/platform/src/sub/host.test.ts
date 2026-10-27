@@ -43,6 +43,16 @@ describe('resolveSubHostProps', () => {
     expect(resolved).not.toHaveProperty('auth')
   })
 
+  it('returns trimmed identity fields', () => {
+    const resolved = resolveSubHostProps(
+      currentProps({ instanceId: ' a ', appKey: ' a ', viewId: ' view ' }),
+      defaults,
+    )
+    expect(resolved.instanceId).toBe('a')
+    expect(resolved.context.instanceId).toBe('a')
+    expect(resolved.context.viewId).toBe('view')
+  })
+
   it('rejects missing instanceId and other invalid identity', () => {
     expect(() => resolveSubHostProps({}, defaults)).toThrow(
       expect.objectContaining({ code: 'runtime.sub.invalid-host' }),

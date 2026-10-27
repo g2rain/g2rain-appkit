@@ -6,12 +6,11 @@ describe('normalizeError', () => {
   it('keeps http fields and drops sensitive context', () => {
     const error = Object.assign(new Error('gateway failed'), {
       source: 'backend',
-      code: 'DEMO_FAILED',
+      errorCode: 'DEMO_FAILED',
       status: 400,
       requestId: 'request-1',
       retryable: false,
       requestTime: '2026-09-19T00:00:00Z',
-      errorCode: 'DEMO_FAILED',
       context: {
         token: 'secret-token',
         tokenKid: 'kid',
@@ -71,7 +70,7 @@ describe('createErrorCapability', () => {
   it('uses backend code before the unknown text and translates when i18n is wired', async () => {
     const presenter = vi.fn()
     const coded = createErrorCapability({ presenter: { present: presenter } })
-    await coded.handle({ source: 'backend', code: 'DEMO_FAILED', status: 400, message: '' })
+    await coded.handle({ source: 'backend', errorCode: 'DEMO_FAILED', status: 400, message: '' })
     expect(presenter).toHaveBeenCalledWith(expect.any(PlatformError), 'DEMO_FAILED')
 
     const translated = vi.fn()
@@ -83,5 +82,16 @@ describe('createErrorCapability', () => {
     await i18n.handle(new Error('raw'))
     expect(translated).toHaveBeenCalledWith(expect.any(PlatformError), '已翻译')
     expect(i18n.dependsOn).toEqual(['i18n'])
+  })
+
+  it('falls back to error.message when translate returns the raw key', async () => {
+    const presenter = vi.fn()
+    const capability = createErrorCapability({
+      presenter: { present: presenter },
+      translate: key => key,
+      policy: { resolve: () => ({ messageKey: 'ERR_MISSING' }) },
+    })
+    await capability.handle(new Error('visible message'))
+    expect(presenter).toHaveBeenCalledWith(expect.any(PlatformError), 'visible message')
   })
 })

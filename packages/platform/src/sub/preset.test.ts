@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createErrorCapability } from '../error/index.js'
 import { createSubPlatform } from './index.js'
 import { createStandardSubPlatform } from './preset.js'
@@ -64,5 +64,34 @@ describe('createStandardSubPlatform', () => {
       }),
       capabilities: [createErrorCapability({ translate: () => 'text' })],
     })).toThrow(expect.objectContaining({ code: 'runtime.capability.missing-dependency' }))
+  })
+
+  it('keeps an explicit error.translate instead of overriding with the i18n engine', async () => {
+    const custom = vi.fn((key: string) => `custom:${key}`)
+    const engine = vi.fn((key: string) => `engine:${key}`)
+    const presenter = vi.fn()
+    const platform = createStandardSubPlatform({
+      applicationCode: 'member',
+      createApplication: () => ({
+        mount() { return undefined },
+        unmount() { return undefined },
+      }),
+      i18n: {
+        engine: {
+          getLocale: () => 'zh-CN',
+          setLocale() { return undefined },
+          translate: engine,
+        },
+      },
+      error: {
+        translate: custom,
+        presenter: { present: presenter },
+        policy: { resolve: () => ({ messageKey: 'ERR_X' }) },
+      },
+    })
+    await platform.handleError(new Error('raw'))
+    expect(custom).toHaveBeenCalledWith('ERR_X')
+    expect(engine).not.toHaveBeenCalled()
+    expect(presenter).toHaveBeenCalledWith(expect.anything(), 'custom:ERR_X')
   })
 })

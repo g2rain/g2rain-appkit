@@ -183,6 +183,8 @@ export function createDpopProof(input: DpopSignInput): Promise<string>
 
 - HTTP 包遵循 Axios `signal`，不创建应用级 Loading UI。
 - `@g2rain/platform/loading` 提供引用计数控制器，而不是直接耦合某个请求单例。
+- 首次 begin 后延迟 `delay`（默认 200ms）才打开，短请求不闪遮罩；显示后至少保持 `minDuration`（默认 300ms）。
+- `createLoadingCapability` 所有实例共用一个计数，一个实例结束不会关掉别的实例还在用的遮罩；实例卸载时只结束它自己未结束的 Loading。
 
 ```ts
 export interface LoadingController {
@@ -251,6 +253,7 @@ export interface EventAdapter<Message> {
 ```text
 g2rain:sub-app:request-token
 g2rain:main-app:token-response
+g2rain:main-app:token-error
 g2rain:sub-app:token-invalid
 g2rain:sub-app:route-change
 g2rain:main-app:theme-changed

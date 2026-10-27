@@ -27,6 +27,8 @@ export async function prepareRequestBody(config: InternalAxiosRequestConfig): Pr
     const transforms = config.transformRequest == null ? [] : Array.isArray(config.transformRequest) ? config.transformRequest : [config.transformRequest]
     for (const transform of transforms) data = transform.call(config, data, config.headers)
     config.data = data
+    // 与旧客户端一致：字符串正文未指定类型时按 JSON 发送
+    if (typeof data === 'string' && !config.headers.getContentType()) config.headers.setContentType('application/json')
   }
   // 之后的 Axios 变换必须保持恒等，包括重放，不能再改已签名的字节。
   config.transformRequest = [(value: unknown) => value]

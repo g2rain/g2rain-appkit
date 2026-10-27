@@ -1,5 +1,6 @@
 <template>
   <RemoteSelect
+    :key="usageCode ?? ''"
     v-model="innerValue"
     :fetch-data="fetchData"
     :value-key="valueKey"
@@ -9,7 +10,7 @@
     :disabled="disabled"
     :width="width"
     :debounce-delay="debounceDelay"
-    prefetch-on-open
+    :prefetch-on-open="Boolean(usageCode)"
     @change="handleChange"
     @clear="emit('clear')"
   />
@@ -18,6 +19,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useG2rainUi } from '../context'
+import { useG2rainPlatformUi } from '../platform/provide'
 import RemoteSelect from './RemoteSelect.vue'
 import type {
   FetchDataFunction,
@@ -32,7 +34,7 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string | null
     usageCode?: string
-    apiMethod: (
+    apiMethod?: (
       params: RemoteSelectFetchParams & { usageCode?: string },
     ) => Promise<readonly RemoteSelectOption[]>
     valueKey?: string
@@ -46,6 +48,7 @@ const props = withDefaults(
   {
     modelValue: undefined,
     usageCode: undefined,
+    apiMethod: undefined,
     valueKey: 'code',
     labelKey: 'name',
     placeholder: undefined,
@@ -62,7 +65,8 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const { translate } = useG2rainUi()
+const { translate, locale } = useG2rainUi()
+const platform = useG2rainPlatformUi()
 const resolvedPlaceholder = computed(
   () => props.placeholder ?? translate('G2_PH_DICT_ITEM', '请选择字典项'),
 )
@@ -76,8 +80,29 @@ const innerValue = computed({
   set: (value: RemoteSelectValue) => emit('update:modelValue', normalize(value)),
 })
 
-const fetchData: FetchDataFunction = (params) =>
-  props.apiMethod({ ...params, usageCode: props.usageCode })
+/**
+ * 字典按名称关键字搜索：纯数字也当作关键字，不按 value 查。
+ * 没有 usageCode 且没有关键字时不请求，避免拉全量字典。
+ * 显式 apiMethod 优先；否则走 dataProviders.dict。
+ */
+const fetchData: FetchDataFunction = async (params) => {
+  const key = params.key ?? (params.value !== undefined ? String(params.value) : undefined)
+  if (!props.usageCode && !key) return []
+  if (props.apiMethod) {
+    return props.apiMethod({ key, signal: params.signal, usageCode: props.usageCode })
+  }
+  const loadOptions = platform.dataProviders?.dict?.loadOptions
+  if (!loadOptions) {
+    platform.onMissingProvider?.('dict')
+    return []
+  }
+  return loadOptions({
+    usageCode: props.usageCode,
+    key,
+    signal: params.signal,
+    locale: locale?.(),
+  })
+}
 
 function handleChange(value: RemoteSelectValue): void {
   emit('change', normalize(value))

@@ -53,15 +53,15 @@ import { OrganSelect, DictText, StatusSwitch } from '@g2rain/ui/platform'
 </template>
 ```
 
-OrganSelect 保留数值 ID、organId/organName 默认字段、200px 宽度、300ms 防抖、prefetchOnOpen=true，以及 update:modelValue/change/clear。支持 apiMethod、query、defaultValue、clearable、autoSelectFirstWhenEmpty，显式 Props 优先于 Provider；默认无策略时允许清空、不自动选择。搜索和数值 ID 回显复用 RemoteSelect，语言或 query 变化清除本组件选项缓存。提供 focus/openDropdown。组织加载错误通过 error 发出。
+OrganSelect 保留数值 ID、organId/organName 默认字段、200px 宽度、300ms 防抖、prefetchOnOpen=true，以及 update:modelValue/change/clear。支持 apiMethod、defaultValue、clearable、autoSelectFirstWhenEmpty，显式 Props 优先于 Provider，显式传 `defaultValue=null` 表示不回填默认机构；默认无策略时允许清空、不自动选择。搜索和数值 ID 回显复用 RemoteSelect，语言变化由 RemoteSelect 清空缓存并重新加载。提供 focus/openDropdown。组织加载错误通过 error 发出。
 
 DictText 保留 value、usageCode、apiMethod、valueKey=code、labelKey=name、placeholder='-'；新增 dictCode 和 options。优先级 options（包括空数组）> apiMethod > Provider。数字按字符串匹配，布尔值兼容 true/1/yes/y、false/0/no/n，未匹配值显示原值。响应值、语言与字典范围变化，取消旧请求；错误通过 error 发出。默认 Slot 提供 text/loading。
 
-StatusSwitch 默认 ACTIVE/INACTIVE、inlinePrompt=true，保留 apiMethod({nextValue,prevValue})、success/error 载荷。新增 submit(next,previous)，优先于 apiMethod；传 permission（页面元素权限码）时按注入的 permission.isEnabled 计算 disabled，未注入则不可操作并触发 onMissingProvider('permission')；均不提供时仅本地切换。显式 options 优先于 fetchOptions 和字典 Provider，usageCode/dictCode 指定字典；字典加载错误触发 load-error。提交时禁用重复操作，失败保持原值；父组件在等待期间更改 modelValue 时不覆盖新的状态，卸载后不再发事件。
+StatusSwitch 默认 ACTIVE/INACTIVE、inlinePrompt=true，保留 apiMethod({nextValue,prevValue})、success/error 载荷。新增 submit(next,previous)，优先于 apiMethod；传 permission（页面元素权限码）时按注入的 permission.isEnabled 计算 disabled，未注入则不可操作并触发 onMissingProvider('permission')；均不提供时仅本地切换。显式 options 优先于 fetchOptions 和字典 Provider，usageCode/dictCode 指定字典；字典加载错误触发 load-error。提交时禁用重复操作，失败保持原值；父组件在等待期间更改 modelValue 时跳过 update:modelValue/change，但仍发 success；卸载后不再发事件。
 
 ## 有意调整与迁移
 
-- StatusSwitch 从旧版“先更新、失败回滚”改成“成功后更新”。成功事件顺序为 update:modelValue、change、success；失败仅 error。
+- StatusSwitch 从旧版“先更新、失败回滚”改成“成功后更新”。成功时若 modelValue 仍为提交前值，顺序为 update:modelValue、change、success；外部已改值则仅 success；失败仅 error。
 - 不再自动 ElMessage 弹出提示；旧 successMessage/errorMessage 改由 success/error 事件处理，避免重复提示。
 - OrganSelect 不读 Token Store；旧默认组织策略需要按上述 getPolicy 注入。
 - 缺失加载器不发网络请求，调用可选 onMissingProvider；不会猜测业务 Endpoint。

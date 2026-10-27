@@ -4,7 +4,7 @@
     :active-text="label(activeValue)" :inactive-text="label(inactiveValue)" @change="change" />
 </template>
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElSwitch } from 'element-plus'
 import { useG2rainUi } from '../context'
 import { useG2rainPlatformUi } from './provide'
@@ -46,6 +46,9 @@ const permitted = computed(() => {
   return platform.permission.isEnabled(props.permission)
 })
 let disposed = false
+/** el-switch 在挂载时发现值不等于开/关值会自动发 change，挂载前的 change 不是用户操作，不提交 */
+let mounted = false
+onMounted(() => { mounted = true })
 onBeforeUnmount(() => { disposed = true })
 const { items } = useDictOptions(() => ({
   options: props.options?.map(item => ({ code: item.value, name: item.label })),
@@ -57,17 +60,19 @@ function label(value: StatusValue) {
   const hit = items.value.find(item => String(item.code) === String(value))
   return String(hit?.name ?? (value === 'ACTIVE' ? ui.translate('G2_OPT_ACTIVE', '有效') : value === 'INACTIVE' ? ui.translate('G2_OPT_INACTIVE', '无效') : value))
 }
-/** 请求成功后才改 v-model。期间外部已改值，或组件已卸载，则不再回写，避免覆盖更新的状态。 */
+/** 请求成功后才改 v-model。已卸载直接返回；外部已改值则跳过回写，但 success 仍发出。 */
 async function change(nextValue: StatusValue) {
-  if (props.disabled || !permitted.value || loading.value || nextValue === props.modelValue) return
+  if (!mounted || props.disabled || !permitted.value || loading.value || nextValue === props.modelValue) return
   const prevValue = props.modelValue
   loading.value = true
   try {
     if (props.submit) await props.submit(nextValue, prevValue)
     else await props.apiMethod?.({ nextValue, prevValue })
-    if (disposed || props.modelValue !== prevValue) return
-    emit('update:modelValue', nextValue)
-    emit('change', nextValue)
+    if (disposed) return
+    if (props.modelValue === prevValue) {
+      emit('update:modelValue', nextValue)
+      emit('change', nextValue)
+    }
     emit('success', { nextValue, prevValue })
   } catch (error) { if (!disposed) emit('error', { nextValue, prevValue, error }) }
   finally { loading.value = false }

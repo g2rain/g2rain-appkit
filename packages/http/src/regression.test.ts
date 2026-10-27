@@ -22,7 +22,7 @@ describe('HTTP integration regressions', () => {
     await Promise.all([h.client.get('/a'), h.client.get('/b')])
     expect(ensure).toHaveBeenCalledTimes(1)
     auth.isLogin = false
-    await expect(h.client.get('/c')).rejects.toMatchObject({ code: 'NO_LOGIN' })
+    await expect(h.client.get('/c')).rejects.toMatchObject({ errorCode: 'NO_LOGIN' })
     expect(adapter).toHaveBeenCalledTimes(2)
   })
   it('reuses a completed refresh for late failures from the old token', async () => {
@@ -69,10 +69,10 @@ describe('HTTP integration regressions', () => {
     const h = createHttpClient({ authSessionProvider: () => auth, ensureAccessToken: ensure, authErrorHandler: handler })
     let count = 0
     h.axios.defaults.adapter = async config => { count++; return response(config, 500, 'gateway.40002') }
-    await expect(h.client.get('/a')).rejects.toMatchObject({ source: 'auth', code: 'gateway.40002' })
+    await expect(h.client.get('/a')).rejects.toMatchObject({ source: 'auth', errorCode: 'gateway.40002' })
     expect(count).toBe(2)
     h.axios.defaults.adapter = async config => response(config, 500, 'gateway.40001')
-    await expect(h.client.get('/a')).rejects.toMatchObject({ code: 'gateway.40001' })
+    await expect(h.client.get('/a')).rejects.toMatchObject({ errorCode: 'gateway.40001' })
     expect(ensure).toHaveBeenCalledTimes(1)
     expect(handler).toHaveBeenCalledTimes(1)
   })
@@ -90,13 +90,13 @@ describe('HTTP integration regressions', () => {
     const errors = settled.map(r => r.status === 'rejected' ? r.reason : undefined)
     expect(errors[0]).toBe(errors[1])
     expect(errors[1]).toBe(errors[2])
-    expect(errors[0].code).toBe('TOKEN_REFRESH_FAILED')
+    expect(errors[0].errorCode).toBe('TOKEN_REFRESH_FAILED')
     expect(handler).toHaveBeenCalledTimes(1)
   })
   it('preserves original errors when onError rejects', async () => {
     const h = createHttpClient({ withAuth: false, onError: async () => { throw Error('notification failed') } })
     h.axios.defaults.adapter = async config => response(config, 500, 'DOMAIN_ERROR')
-    await expect(h.client.get('/a')).rejects.toMatchObject({ code: 'DOMAIN_ERROR', requestId: 'r1' })
+    await expect(h.client.get('/a')).rejects.toMatchObject({ errorCode: 'DOMAIN_ERROR', requestId: 'r1' })
   })
   it.each(['cancel', 'dispose'])('does not replay after %s during refresh', async action => {
     const auth = session()
@@ -110,7 +110,8 @@ describe('HTTP integration regressions', () => {
     await vi.waitFor(() => expect(ensure).toHaveBeenCalledTimes(1))
     if (action === 'cancel') controller.abort(); else h.dispose()
     finish()
-    expect((await result).code).toBe(action === 'cancel' ? 'ERR_CANCELED' : 'HTTP_CLIENT_DISPOSED')
+    const err = await result
+    expect(action === 'cancel' ? err.code : err.errorCode).toBe(action === 'cancel' ? 'ERR_CANCELED' : 'HTTP_CLIENT_DISPOSED')
     expect(adapter).toHaveBeenCalledTimes(1)
   })
   it('does not refresh or sign withAuth=false and preserves cancellation', async () => {
@@ -153,6 +154,42 @@ describe('HTTP integration regressions', () => {
     expect(proofs).toHaveLength(2)
     expect(proofs[0]).not.toBe(proofs[1])
     expect(bodies[0]).toBe(bodies[1])
+  })
+  it('forces a refresh when the server marked the token expired', async () => {
+    const auth = session(); auth.tokenExpired = true
+    const ensure = vi.fn(async () => { auth.tokenString = 'new'; auth.tokenExpired = false })
+    const h = createHttpClient({ authSessionProvider: () => auth, ensureAccessToken: ensure })
+    h.axios.defaults.adapter = async config => response(config)
+    await h.client.get('/a')
+    expect(ensure).toHaveBeenCalledWith({ force: true })
+  })
+  it('does not merge a forced refresh into an in-flight normal refresh', async () => {
+    const auth = session()
+    let releaseResponse!: () => void
+    let releaseRefresh!: () => void
+    const responseGate = new Promise<void>(resolve => { releaseResponse = resolve })
+    const refreshGate = new Promise<void>(resolve => { releaseRefresh = resolve })
+    const ensure = vi.fn(async ({ force }: { force?: boolean } = {}) => {
+      if (!force) { await refreshGate; auth.isAccessTokenValid = true; return }
+      auth.tokenString = 'new'
+    })
+    const h = createHttpClient({ authSessionProvider: () => auth, ensureAccessToken: ensure })
+    h.axios.defaults.adapter = async config => {
+      if (config.headers.get('Authorization') !== 'Bearer old') return response(config)
+      if (config.url === '/a') await responseGate
+      return response(config, 500, 'gateway.40002')
+    }
+    // A 带旧 token 发出后，B 因本地过期触发普通刷新；A 的 40002 在普通刷新进行中到达
+    const a = h.client.get('/a')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    auth.isAccessTokenValid = false
+    const b = h.client.get('/b')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    releaseResponse()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    releaseRefresh()
+    await Promise.all([a, b])
+    expect(ensure.mock.calls.map(([opts]) => opts)).toEqual([{ force: false }, { force: true }])
   })
   it('refuses to hash an unencoded FormData', async () => {
     await expect(toRequestBodyBytes(new FormData())).rejects.toThrow('Encode multipart')

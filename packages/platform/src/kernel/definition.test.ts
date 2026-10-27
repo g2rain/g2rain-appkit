@@ -321,6 +321,79 @@ describe('createSubPlatform', () => {
     expect(steps).toEqual(['app', 'cap', 'scope'])
   })
 
+  it('waits for an in-flight update before unmounting', async () => {
+    const calls: string[] = []
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    const platform = createSubPlatform({
+      applicationCode: 'member',
+      createApplication: () => application({
+        update() { calls.push('app.update') },
+        unmount() { calls.push('app.unmount') },
+      }),
+      capabilities: [{
+        id: 'i18n',
+        async update() {
+          calls.push('i18n.update')
+          await gate
+        },
+        unmount() { calls.push('i18n.unmount') },
+      }],
+    })
+    await platform.mount(request('a'))
+
+    const updating = platform.update('a', { locale: 'en-US' })
+    const unmounting = platform.unmount('a')
+    await Promise.resolve()
+    expect(calls).toEqual(['i18n.update'])
+
+    release()
+    await Promise.all([updating, unmounting])
+    expect(calls).toEqual(['i18n.update', 'app.update', 'app.unmount', 'i18n.unmount'])
+    await expect(platform.update('a', { locale: 'zh-CN' })).rejects.toMatchObject({ code: 'runtime.instance.missing' })
+  })
+
+  it('still unmounts after the overlapping update fails', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    const unmounted: string[] = []
+    const platform = createSubPlatform({
+      applicationCode: 'member',
+      createApplication: () => application({ unmount() { unmounted.push('app') } }),
+      capabilities: [{
+        id: 'i18n',
+        async update() {
+          await gate
+          throw new Error('load failed')
+        },
+      }],
+    })
+    await platform.mount(request('a'))
+
+    const updating = platform.update('a', { locale: 'en-US' })
+    const unmounting = platform.unmount('a')
+    release()
+    await expect(updating).rejects.toBeInstanceOf(PlatformError)
+    await unmounting
+    expect(unmounted).toEqual(['app'])
+  })
+
+  it('does not carry initialRoute into later updates', async () => {
+    const routes: Array<string | undefined> = []
+    const platform = createSubPlatform({
+      applicationCode: 'member',
+      createApplication: () => application({ update(next) { routes.push(next.initialRoute) } }),
+    })
+    await platform.bootstrap()
+    await platform.mount(request('menu-member', { initialRoute: '/dict' }))
+
+    await platform.update('menu-member', { locale: 'en' })
+    await platform.update('menu-member', { initialRoute: '/member' })
+    await platform.update('menu-member', { locale: 'fr' })
+
+    expect(routes).toEqual([undefined, '/member', undefined])
+  })
+
   it('rejects cyclic and duplicate capabilities when the definition is created', () => {
     const cycle = () => createSubPlatform({
       applicationCode: 'member',

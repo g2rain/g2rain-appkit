@@ -38,6 +38,9 @@ export function createHttpCapability(adapter: PlatformHttpAdapter): RuntimeCapab
     update(input) {
       return syncLocale(input.context.locale)
     },
+    rollbackUpdate(input) {
+      return syncLocale(input.previous.locale)
+    },
     unmount() {
       return undefined
     },

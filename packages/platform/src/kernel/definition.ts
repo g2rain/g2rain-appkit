@@ -14,7 +14,7 @@ import type {
 
 /** Definition 级状态。实例可以挂载多次，Definition 本身只 bootstrap 一次。 */
 type DefinitionState = 'created' | 'bootstrapped' | 'disposing' | 'disposed'
-/** 单个 instanceId 的状态。updating 仍可被卸载，mounting / unmounting 则视为忙碌。 */
+/** 单个 instanceId 的状态。updating 时卸载会先等这次更新结束；mounting / unmounting 视为忙碌。 */
 type InstanceState = 'mounting' | 'mounted' | 'updating' | 'unmounting'
 
 interface MountedCapability {
@@ -29,6 +29,8 @@ interface InstanceRecord {
   scope: RuntimeScope
   application?: SubApplication
   mounted: MountedCapability[]
+  /** 进行中的 update，结束（成功或失败）后 resolve；卸载据此排在更新之后 */
+  updating?: Promise<void>
 }
 
 /** 把未知异常收成带阶段的 PlatformError；已经是 PlatformError 的原样返回。 */
@@ -79,12 +81,13 @@ function snapshotContext(context: RuntimeContext): RuntimeContext {
  * 只合并 locale、theme、initialRoute、metadata。
  * applicationCode、viewId、instanceId、mode、contextPath 在实例生命周期内不可变。
  * 字段出现在 patch 里且值为 undefined，表示清空，而不是保留旧值。
+ * initialRoute 是一次性的导航意图，不沿用上一次的值：patch 没带就清空，避免每次 update 都重放导航。
  */
 function applyPatch(previous: RuntimeContext, patch: RuntimeContextUpdate): RuntimeContext {
   const next = snapshotContext(previous)
   if ('locale' in patch) next.locale = patch.locale
   if ('theme' in patch) next.theme = patch.theme
-  if ('initialRoute' in patch) next.initialRoute = patch.initialRoute
+  next.initialRoute = 'initialRoute' in patch ? patch.initialRoute : undefined
   if ('metadata' in patch) next.metadata = patch.metadata ? { ...patch.metadata } : undefined
   return next
 }
@@ -385,6 +388,7 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
    * 只有 mounted 可以更新。全部 Capability 成功后才写回 context。
    * 应用 update 失败时，先用 previous 再调一次应用，再回滚已更新的 Capability。
    * 失败后实例仍保持 mounted，调用方可以重试或卸载。
+   * 期间到来的 unmount 会等这次更新结束再执行，不会对已卸载的应用继续 update。
    */
   async function runUpdate(instanceId: string, patch: RuntimeContextUpdate): Promise<void> {
     assertActive('update')
@@ -400,6 +404,10 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     }
 
     record.state = 'updating'
+    let settle!: () => void
+    record.updating = new Promise<void>((resolve) => {
+      settle = resolve
+    })
     const previous = record.context
     const next = applyPatch(previous, patch)
     const updated: Array<MountedCapability & { updateInput: PlatformUpdateInput }> = []
@@ -445,10 +453,10 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
       }
 
       record.context = next
+    } finally {
       record.state = 'mounted'
-    } catch (error) {
-      record.state = 'mounted'
-      throw error
+      record.updating = undefined
+      settle()
     }
   }
 
@@ -456,7 +464,10 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
     return track(runUpdate(instanceId, patch))
   }
 
-  /** 正常卸载。只接受 mounted / updating：先卸应用，再逆序 unmount Capability，最后释放实例 Scope。 */
+  /**
+   * 正常卸载：先卸应用，再逆序 unmount Capability，最后释放实例 Scope。
+   * updating 时先等更新结束，再按最新状态重新校验。
+   */
   async function releaseInstance(instanceId: string, phase: PlatformPhase): Promise<void> {
     const record = instances.get(instanceId)
     if (!record) {
@@ -466,7 +477,11 @@ export function createSubPlatform(options: CreateSubPlatformOptions): SubPlatfor
         message: `Instance "${instanceId}" is not mounted.`,
       })
     }
-    if (record.state !== 'mounted' && record.state !== 'updating') {
+    if (record.state === 'updating') {
+      await record.updating
+      return releaseInstance(instanceId, phase)
+    }
+    if (record.state !== 'mounted') {
       throw new PlatformError({
         code: 'runtime.instance.busy',
         phase,

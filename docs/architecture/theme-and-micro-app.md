@@ -24,6 +24,8 @@
 <html data-g2-theme="dark">
 ```
 
+子应用嵌入主应用时，qiankun 样式隔离会把子应用 CSS 里的 `:root` 改写成子应用的包裹层（带 `data-qiankun` 属性的元素）。主应用在挂载前（qiankun `beforeMount`）和每次切换主题时，把当前主题写到所有包裹层的 `data-g2-theme` 上，子应用的主题变量和 Element Plus 映射随之切换。`@g2rain/theme` 的 Element Plus 映射选择器带 `[data-g2-theme]`，优先级高于 Element Plus 自带的 `:root` 变量，与引入顺序无关。子应用独立运行时仍由自己的主题控制器写根节点。
+
 ## 3. 生命周期
 
 ```mermaid
@@ -34,12 +36,10 @@ sequenceDiagram
 
   Shell->>Shell: 读取用户主题偏好
   Shell->>Shell: 设置 data-g2-theme
-  Shell->>App: 挂载并传入当前主题
-  App->>Runtime: 注册主题监听
-  Shell-->>Runtime: g2rain:main-app:theme-changed
-  Runtime-->>App: 更新应用内主题状态
+  Shell->>App: beforeMount 时把主题写到子应用包裹层
+  Shell->>App: 挂载
+  Shell->>Shell: 切换主题时同步更新所有包裹层的 data-g2-theme
   Shell->>App: 卸载
-  App->>Runtime: 释放监听器
 ```
 
 ## 4. 消息协议

@@ -17,6 +17,8 @@ export interface OrganDataProvider extends EntityDataProvider {
   getPolicy?: () => OrganSelectionPolicy
 }
 export interface DictQuery extends DataQueryContext {
+  /** 名称关键字，DictSelect 搜索时传入 */
+  key?: string
   code?: string
   dictCode?: string
   usageCode?: string
