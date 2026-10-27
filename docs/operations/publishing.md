@@ -8,7 +8,7 @@
 - Minor：向后兼容的新能力。
 - Major：不兼容变更。
 
-在 `1.0.0` 前，业务应用建议使用 `~0.x.y`；稳定后可使用 `^1.x.y`。版本变更必须同步根目录 [`CHANGELOG.md`](../../CHANGELOG.md)。当前四个包均为 `1.0.0`。
+在 `1.0.0` 前，业务应用建议使用 `~0.x.y`；稳定后可使用 `^1.x.y`。版本变更必须同步根目录 [`CHANGELOG.md`](../../CHANGELOG.md)。当前四个包均为 `1.0.1`（本地维护版本，尚未发布）。
 
 ## 2. 发布前检查
 
@@ -40,20 +40,13 @@
 
 仓库的 `.github/workflows/publish-npm.yml` 在推送受保护的 `vX.Y.Z` Tag 后执行。它先校验 Tag 去掉 `v` 后的版本号与四个 workspace 包完全一致，完成 npm 发布后才自动创建 GitHub Release。工作流挂在 GitHub Environment `npm`（应配置人工审批）。
 
-发布时统一使用 `v1.0.0`，不使用裸 `1.0.0`。由于四包由一次发布候选共同发布，Tag 版本必须同时匹配 `@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/platform`。
+下一次发布统一使用 `v1.0.1`，不使用裸 `1.0.1`。由于四包由一次发布候选共同发布，Tag 版本必须同时匹配 `@g2rain/theme`、`@g2rain/ui`、`@g2rain/http` 与 `@g2rain/platform`。
 
-**首发引导（bootstrap）**
+**当前发布认证（npm Trusted Publishing）**
 
-1. 在 Environment `npm` 中创建 Secret `NPM_PUBLISH_TOKEN`（npm automation/publish token）。**不要**放在普通 Repository Secret。
-2. 工作流在 `npm ci` 前执行 `npm install --global npm@^11.5.1`（Trusted Publishing / 现代发布要求 npm >= 11.5.1）。
-3. 发布步骤使用 `NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}`。
+四个 `@g2rain/*` 包均已绑定本仓的 Trusted Publisher。工作流在 `npm ci` 前安装 `npm@^11.5.1`，使用 GitHub Actions OIDC（`id-token: write`）和 `npm publish --provenance` 发布；不使用任何长期 npm Token 或 `NODE_AUTH_TOKEN`。
 
-**目标态（Trusted Publishing）**
-
-在 npm 为四个包分别登记同一 GitHub 仓库和该工作流为 Trusted Publisher 后：
-
-1. 删除 Environment 中的 `NPM_PUBLISH_TOKEN`。
-2. 将发布步骤改回 OIDC：保留 `id-token: write`，去掉 `NODE_AUTH_TOKEN`，并为各包加上 `--provenance`。
+Environment `npm` 仅保留人工审批和受保护 Tag 限制。若历史上存在 `NPM_PUBLISH_TOKEN`，应从该 Environment 删除，不得迁移为 Repository Secret。
 
 先在受保护分支或 PR 确认 `.github/workflows/ci.yml` 成功，再创建 Release；工作流仍会重新执行全部发布前检查。
 

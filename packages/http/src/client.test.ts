@@ -197,7 +197,7 @@ describe('createHttpClient', () => {
       expect(state.cancelled).toBe(true)
     })
 
-    it('stops dispatching and releases the stream after dispose', async () => {
+    it('releases a silent stream after dispose without waiting for more data', async () => {
       const { stream, state } = openStream('data: {"n":1}\n\n')
       const { client, dispose } = createHttpClient()
       const adapter: AxiosAdapter = async (config) => ({ config, data: stream, headers: {}, status: 200, statusText: 'OK' })
@@ -206,11 +206,55 @@ describe('createHttpClient', () => {
       const running = client.sse('/chat', {}, onEvent, { adapter })
       await vi.waitFor(() => expect(onEvent).toHaveBeenCalledTimes(1))
       dispose()
-      state.push('data: {"n":2}\n\n')
 
       await expect(running).rejects.toMatchObject({ errorCode: 'HTTP_CLIENT_DISPOSED' })
       expect(onEvent).toHaveBeenCalledTimes(1)
       expect(state.cancelled).toBe(true)
+    })
+
+    it('disposes all active silent streams', async () => {
+      const { client, dispose } = createHttpClient()
+      const streams = [openStream('data: {"n":1}\n\n'), openStream('data: {"n":2}\n\n')]
+      const onEvent = vi.fn()
+      const running = streams.map(({ stream }) => client.sse('/chat', {}, onEvent, {
+        adapter: async config => ({ config, data: stream, headers: {}, status: 200, statusText: 'OK' }),
+      }).catch(error => error))
+      await vi.waitFor(() => expect(onEvent).toHaveBeenCalledTimes(2))
+      dispose()
+      for (const error of await Promise.all(running)) {
+        expect(error).toMatchObject({ errorCode: 'HTTP_CLIENT_DISPOSED' })
+      }
+      await vi.waitFor(() => expect(streams.every(({ state }) => state.cancelled)).toBe(true))
+    })
+
+    it('cancels a silent stream using the caller signal', async () => {
+      const { stream, state } = openStream('data: {"n":1}\n\n')
+      const { client } = createHttpClient()
+      const controller = new AbortController()
+      const onEvent = vi.fn()
+      const running = client.sse('/chat', {}, onEvent, {
+        signal: controller.signal,
+        adapter: async config => ({ config, data: stream, headers: {}, status: 200, statusText: 'OK' }),
+      }).catch(error => error)
+      await vi.waitFor(() => expect(onEvent).toHaveBeenCalledTimes(1))
+      controller.abort()
+      expect(await running).toMatchObject({ code: 'ERR_CANCELED' })
+      await vi.waitFor(() => expect(state.cancelled).toBe(true))
+    })
+
+    it('aborts transport while waiting for response headers on dispose', async () => {
+      const { client, dispose } = createHttpClient()
+      let transportSignal: AbortSignal | undefined
+      const running = client.sse('/chat', {}, vi.fn(), {
+        adapter: config => new Promise((_resolve, reject) => {
+          transportSignal = config.signal as AbortSignal
+          transportSignal.addEventListener('abort', () => reject(new Error('transport aborted')), { once: true })
+        }),
+      }).catch(error => error)
+      await vi.waitFor(() => expect(transportSignal).toBeDefined())
+      dispose()
+      expect(await running).toMatchObject({ errorCode: 'HTTP_CLIENT_DISPOSED' })
+      expect(transportSignal?.aborted).toBe(true)
     })
   })
 

@@ -1,10 +1,16 @@
 # Changelog
 
-本仓库各可发布包共享此变更记录。版本号以各包 `package.json` 为准；当前四个包均为 `1.0.0`。
+本仓库各可发布包共享此变更记录。版本号以各包 `package.json` 为准；当前四个包均为 `1.0.1`。
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本策略遵循语义化版本。
 
 ## [Unreleased]
+
+- HTTP：`dispose()` 主动取消全部在途 SSE，覆盖响应头等待和静默流；调用方 signal 继续以取消错误结束，释放事件监听和 reader。公开方法签名不变。
+
+## [1.0.1] - Unreleased
+
+下一轮维护版本；尚未发布到 npm。
 
 ## [1.0.0] - 2026-10-01
 
