@@ -57,19 +57,13 @@ jobs:
       - run: npm run build
       - run: npm run pack:check
 
-      # Bootstrap: Environment secret NPM_PUBLISH_TOKEN on `npm` (manual approval).
-      # Do NOT store this as a repository secret. After Trusted Publisher is set up
-      # for each @g2rain/* package, remove NPM_PUBLISH_TOKEN and switch to
-      # OIDC-only publish with --provenance (no NODE_AUTH_TOKEN).
-      - name: Publish packages (bootstrap Environment token)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+      - name: Publish packages with npm Trusted Publishing
         run: |
           set -euo pipefail
-          npm publish --workspace @g2rain/theme --access public
-          npm publish --workspace @g2rain/ui --access public
-          npm publish --workspace @g2rain/http --access public
-          npm publish --workspace @g2rain/platform --access public
+          npm publish --workspace @g2rain/theme --access public --provenance
+          npm publish --workspace @g2rain/ui --access public --provenance
+          npm publish --workspace @g2rain/http --access public --provenance
+          npm publish --workspace @g2rain/platform --access public --provenance
 
   release:
     name: Create GitHub Release

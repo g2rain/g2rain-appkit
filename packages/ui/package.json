@@ -1,6 +1,6 @@
 {
   "name": "@g2rain/ui",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Reusable G2rain Vue 3 components.",
   "license": "Apache-2.0",
   "repository": {
@@ -53,13 +53,13 @@
   },
   "peerDependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@g2rain/theme": "^1.0.0",
+    "@g2rain/theme": "^1.0.1",
     "element-plus": "^2.13.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@g2rain/theme": "1.0.0",
+    "@g2rain/theme": "1.0.1",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/test-utils": "2.4.6",
     "element-plus": "^2.13.0",

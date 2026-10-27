@@ -6,4 +6,4 @@
 - 公共 UI 通过 Provider、Props 和回调获取数据，不猜测业务 Endpoint、权限范围或 Token。
 - 浏览器侧上下文不能替代 Gateway 或服务端的 Token、权限和数据范围验证。
 - 发布制品和示例不得包含密钥、Token、生产凭据或私有 Registry 配置；发布前按[发布流程](../operations/publishing.md)检查 `npm pack` 内容。
-- 首发引导可用 GitHub Environment（`npm`）Secret `NPM_PUBLISH_TOKEN`；不得写入 Repository Secret。Trusted Publishing 就绪后删除该 Token，改用 OIDC。
+- npm 发布只使用 GitHub Actions OIDC Trusted Publishing（`id-token: write` + `--provenance`）；不得保留或新增 `NPM_PUBLISH_TOKEN`、`NODE_AUTH_TOKEN` 或其他长期 npm 写入 Token。
