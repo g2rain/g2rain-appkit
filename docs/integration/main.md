@@ -102,7 +102,9 @@ await platform.notifyLocale(instanceId, locale)
 await platform.updatePublicContext(instanceId, { locale, initialRoute })
 ```
 
-`patch` 里写成 `undefined` 的字段会从已下发 props 里删掉。端口调用成功后才会更新本地快照。还没调用过 `buildPublicProps` 就更新，会抛出 `runtime.main.missing-snapshot`。
+`patch` 里写成 `undefined` 的字段会从已下发 props 里删掉。端口调用成功后才会更新本地快照。
+
+`initialRoute` 是一次性的导航意图：只在挂载时和显式传了 `initialRoute` 的那次更新里下发，快照不保留它。之后切换语言等更新不会重发，子应用不会被拉回初始路由。还没调用过 `buildPublicProps` 就更新，会抛出 `runtime.main.missing-snapshot`。
 
 登录失效：
 
@@ -110,7 +112,7 @@ await platform.updatePublicContext(instanceId, { locale, initialRoute })
 await platform.notifyAuthInvalid(instanceId)
 ```
 
-这会向该实例发送 `g2rain:sub-app:token-invalid`。其他消息：
+这会向该实例发送主发子的 `g2rain:main-app:token-error`。其他消息：
 
 ```ts
 await platform.emitToInstance(instanceId, type, data)

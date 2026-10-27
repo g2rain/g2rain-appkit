@@ -1,6 +1,11 @@
 <template>
   <div class="g2-sortable-table">
-    <el-table ref="tableRef" v-bind="$attrs" @sort-change="handleTableSortChange">
+    <el-table
+      ref="tableRef"
+      v-bind="$attrs"
+      :header-cell-class-name="headerCellClassName"
+      @sort-change="handleTableSortChange"
+    >
       <slot />
     </el-table>
 
@@ -17,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { provide, ref, watch } from 'vue'
+import { provide, ref, useAttrs, watch } from 'vue'
 import SortDialog from './SortDialog.vue'
 import { TABLE_SORT_CONTEXT } from './types'
 import type { SortColumn, SortItem, SortOrder } from './types'
@@ -34,6 +39,7 @@ const emit = defineEmits<{
   'sort-change': [sortParams: Record<string, string>]
 }>()
 
+const attrs = useAttrs()
 const tableRef = ref<unknown>()
 const dialogRef = ref<{ openSortConfig(): void }>()
 const registeredColumns = ref<SortColumn[]>([])
@@ -42,11 +48,19 @@ const { sortConfig, sortDialogVisible, getSortObject, getSortString } = useTable
   props.initialSort,
 )
 
-/** 列注册进多列排序对话框。同 prop 只登记一次，卸载时移除，避免对话框列出已销毁列。 */
+/** 表头按多列排序状态加 ascending / descending 类，并保留调用方传入的 header-cell-class-name。 */
+function headerCellClassName(data: { column: { property?: string } } & Record<string, unknown>): string {
+  const own = attrs.headerCellClassName ?? attrs['header-cell-class-name']
+  const base = typeof own === 'function' ? own(data) : (own ?? '')
+  const order = sortConfig.value.find((item) => item.prop === data.column.property)?.order ?? ''
+  return [base, order].filter(Boolean).join(' ')
+}
+
+/** 列注册进多列排序对话框。同 prop 替换（语言切换会改 label），卸载时移除。 */
 function registerColumn(column: SortColumn): void {
-  if (!registeredColumns.value.some((item) => item.prop === column.prop)) {
-    registeredColumns.value.push(column)
-  }
+  const index = registeredColumns.value.findIndex((item) => item.prop === column.prop)
+  if (index >= 0) registeredColumns.value[index] = column
+  else registeredColumns.value.push(column)
 }
 
 function unregisterColumn(prop: string): void {
@@ -87,11 +101,10 @@ function handleDialogSortChange(): void {
 }
 
 watch(
-  () => props.initialSort,
-  (value) => {
-    sortConfig.value = value.map((item) => ({ ...item }))
+  () => props.initialSort.map((item) => `${item.prop},${item.order}`).join(';'),
+  () => {
+    sortConfig.value = props.initialSort.map((item) => ({ ...item }))
   },
-  { deep: true },
 )
 
 defineExpose({

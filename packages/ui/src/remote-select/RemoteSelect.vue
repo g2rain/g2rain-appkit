@@ -75,20 +75,18 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const { translate } = useG2rainUi()
+const ui = useG2rainUi()
+const { translate } = ui
 const selectRef = ref<SelectInstance>()
 const selectedValue = ref<RemoteSelectValue>(props.modelValue)
 const options = ref<RemoteSelectOption[]>([])
 const defaultOptions = ref<RemoteSelectOption[]>([])
 const sourceOptions = ref<RemoteSelectOption[]>([])
-const loading = ref(false)
 const resolvedPlaceholder = computed(
   () => props.placeholder ?? translate('G2_PH_SELECT', '请选择'),
 )
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
-let activeController: AbortController | undefined
-let requestSequence = 0
 let lastRemoteQuery: string | undefined
 
 function getScalar(item: RemoteSelectOption, key: string): unknown {
@@ -132,38 +130,61 @@ function isAbortError(error: unknown): boolean {
   )
 }
 
-async function runFetch(
-  params: Omit<RemoteSelectFetchParams, 'signal'>,
-): Promise<RemoteSelectOption[] | undefined> {
-  activeController?.abort()
-  const controller = new AbortController()
-  activeController = controller
-  const sequence = ++requestSequence
-  loading.value = true
+/**
+ * 一类请求一个通道：只作废同类的上一次请求，预取、回显、搜索互不影响。
+ * 过期响应按序号丢弃，不写回选项。
+ */
+function createChannel() {
+  let controller: AbortController | undefined
+  let sequence = 0
+  const pending = ref(false)
 
-  try {
-    const result = await props.fetchData({ ...params, signal: controller.signal })
-    if (sequence !== requestSequence || controller.signal.aborted) return undefined
-    return Array.from(result)
-  } catch (error) {
-    if (!isAbortError(error)) console.error('RemoteSelect fetchData error:', error)
-    return undefined
-  } finally {
-    if (sequence === requestSequence) loading.value = false
+  async function run(
+    params: Omit<RemoteSelectFetchParams, 'signal'>,
+  ): Promise<RemoteSelectOption[] | undefined> {
+    controller?.abort()
+    const current = new AbortController()
+    controller = current
+    const seq = ++sequence
+    pending.value = true
+    try {
+      const result = await props.fetchData({ ...params, signal: current.signal })
+      if (seq !== sequence || current.signal.aborted) return undefined
+      return Array.from(result)
+    } catch (error) {
+      if (!isAbortError(error)) console.error('RemoteSelect fetchData error:', error)
+      return undefined
+    } finally {
+      if (seq === sequence) pending.value = false
+    }
   }
+
+  function cancel(): void {
+    controller?.abort()
+    controller = undefined
+    sequence += 1
+    pending.value = false
+  }
+
+  return { run, cancel, pending }
+}
+
+const prefetchChannel = createChannel()
+const echoChannel = createChannel()
+const searchChannel = createChannel()
+const loading = computed(
+  () => prefetchChannel.pending.value || echoChannel.pending.value || searchChannel.pending.value,
+)
+
+function cancelAll(): void {
+  prefetchChannel.cancel()
+  echoChannel.cancel()
+  searchChannel.cancel()
 }
 
 function restoreDefaultOptions(): void {
   options.value = [...defaultOptions.value]
   lastRemoteQuery = ''
-}
-
-/** 作废进行中的远程请求，避免清空/本地命中后被旧响应覆盖 */
-function invalidateInFlightRequests(): void {
-  activeController?.abort()
-  activeController = undefined
-  requestSequence += 1
-  loading.value = false
 }
 
 function matches(value: RemoteSelectValue, item: RemoteSelectOption): boolean {
@@ -185,19 +206,25 @@ async function tryAutoSelectFirst(list: readonly RemoteSelectOption[]): Promise<
 }
 
 async function prefetchDefaultOptions(): Promise<void> {
-  if (!props.prefetchOnOpen || defaultOptions.value.length > 0) return
-  const result = await runFetch({})
+  if (!props.prefetchOnOpen || defaultOptions.value.length > 0 || prefetchChannel.pending.value) return
+  const result = await prefetchChannel.run({})
   if (!result) return
   defaultOptions.value = [...result]
   rememberOptions(result)
-  options.value = [...result]
-  lastRemoteQuery = ''
+  // 用户已在搜索时不覆盖搜索结果；已选项的标签保留
+  if (!lastRemoteQuery && !searchChannel.pending.value) {
+    options.value = mergeOptions(result, options.value)
+    lastRemoteQuery = ''
+  }
   await tryAutoSelectFirst(result)
 }
 
-async function loadInitialOption(value: Exclude<RemoteSelectValue, null | undefined>): Promise<void> {
-  if (options.value.some((item) => matches(value, item))) return
-  const result = await runFetch(
+async function loadInitialOption(
+  value: Exclude<RemoteSelectValue, null | undefined>,
+  refresh = false,
+): Promise<void> {
+  if (!refresh && options.value.some((item) => matches(value, item))) return
+  const result = await echoChannel.run(
     typeof value === 'number' ? { value } : { key: value },
   )
   if (!result) return
@@ -221,7 +248,7 @@ function filterLocally(query: string): RemoteSelectOption[] {
 async function search(query: string): Promise<void> {
   const normalized = query.trim()
   if (!normalized) {
-    invalidateInFlightRequests()
+    searchChannel.cancel()
     if (props.prefetchOnOpen) restoreDefaultOptions()
     else options.value = []
     return
@@ -230,7 +257,7 @@ async function search(query: string): Promise<void> {
 
   const local = filterLocally(normalized)
   if (local.length > 0) {
-    invalidateInFlightRequests()
+    searchChannel.cancel()
     options.value = local
     lastRemoteQuery = normalized
     return
@@ -239,7 +266,7 @@ async function search(query: string): Promise<void> {
   const params = /^\d+$/.test(normalized)
     ? { value: Number(normalized) }
     : { key: normalized }
-  const result = await runFetch(params)
+  const result = await searchChannel.run(params)
   if (!result) return
   rememberOptions(result)
   options.value = [...result]
@@ -265,7 +292,8 @@ function handleChange(value: RemoteSelectValue): void {
 }
 
 function handleClear(): void {
-  invalidateInFlightRequests()
+  searchChannel.cancel()
+  echoChannel.cancel()
   restoreDefaultOptions()
   emit('clear')
 }
@@ -286,7 +314,27 @@ watch(
   (value) => {
     selectedValue.value = value
     if (value !== null && value !== undefined) void loadInitialOption(value)
-    else restoreDefaultOptions()
+    else {
+      restoreDefaultOptions()
+      void tryAutoSelectFirst(defaultOptions.value)
+    }
+  },
+)
+
+/** 语言变化时清空缓存，但保留当前选中项旧标签，避免闪原始编码；再强制回显新语言。 */
+watch(
+  () => ui.locale?.(),
+  (next, previous) => {
+    if (next === previous) return
+    cancelAll()
+    defaultOptions.value = []
+    sourceOptions.value = []
+    options.value = options.value.filter((item) => matches(props.modelValue, item))
+    lastRemoteQuery = undefined
+    if (props.prefetchOnOpen) void prefetchDefaultOptions()
+    if (props.modelValue !== null && props.modelValue !== undefined) {
+      void loadInitialOption(props.modelValue, true)
+    }
   },
 )
 
@@ -306,8 +354,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
-  activeController?.abort()
-  requestSequence += 1
+  cancelAll()
 })
 
 defineExpose({ focus, openDropdown })

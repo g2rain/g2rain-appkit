@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, onUnmounted, useAttrs } from 'vue'
+import { computed, inject, onMounted, onUnmounted, useAttrs, watch } from 'vue'
 import { TABLE_SORT_CONTEXT } from './types'
 import type { SortOrder } from './types'
 
@@ -43,11 +43,14 @@ const computedSortable = computed(() => {
   return true
 })
 
-onMounted(() => {
+function syncColumn(): void {
   if (prop.value && props.sortable !== false) {
     context?.registerColumn({ prop: prop.value, label: label.value, sortable: true })
   }
-})
+}
+
+onMounted(syncColumn)
+watch(label, syncColumn)
 
 onUnmounted(() => {
   if (prop.value) context?.unregisterColumn(prop.value)

@@ -2,7 +2,8 @@ import { PlatformError } from '../contract/error.js'
 import type { RuntimeContext, RuntimeContextUpdate } from '../contract/context.js'
 import type { RuntimeMessage } from '../contract/message.js'
 
-const AUTH_INVALID_TYPE = 'g2rain:sub-app:token-invalid'
+/** 主应用通知子应用认证失效，与子应用发往主应用的 token-invalid 方向相反 */
+const TOKEN_ERROR_TYPE = 'g2rain:main-app:token-error'
 
 export interface MainHostFields {
   activeRule?: string
@@ -58,7 +59,7 @@ function requireIdentity(value: string | undefined, field: string): string {
       message: `Public props require a non-empty ${field}.`,
     })
   }
-  return value
+  return value.trim()
 }
 
 function copyProps(props: MainPublicProps): MainPublicProps {
@@ -89,9 +90,17 @@ function applyPublicPatch(current: MainPublicProps, patch: Readonly<RuntimeConte
   return next
 }
 
+/** 快照不保留 initialRoute：它是一次性的导航意图，之后的 update 不能把它重发给子应用。 */
+function snapshotProps(props: MainPublicProps): MainPublicProps {
+  const copy = copyProps(props)
+  delete copy.initialRoute
+  return copy
+}
+
 /**
  * Main Shell 侧的公开 props 协调器。不持有 qiankun 句柄，只缓存已经下发的 props。
  * appKey 固定写成 instanceId。updatePublicContext 只有在 runtimePort 成功后才提交快照。
+ * initialRoute 只在首次挂载或显式导航的那次下发，切换语言等更新不会把子应用拉回初始路由。
  */
 export function createMainPlatform(options: CreateMainPlatformOptions): MainPlatformCoordinator {
   const snapshots = new Map<string, MainPublicProps>()
@@ -125,9 +134,8 @@ export function createMainPlatform(options: CreateMainPlatformOptions): MainPlat
     if (context.initialRoute !== undefined) props.initialRoute = context.initialRoute
     if (host?.activeRule !== undefined) props.activeRule = host.activeRule
     if (host?.entryOrigin !== undefined) props.entryOrigin = host.entryOrigin
-    const stored = copyProps(props)
-    snapshots.set(instanceId, stored)
-    return copyProps(stored)
+    snapshots.set(instanceId, snapshotProps(props))
+    return copyProps(props)
   }
 
   async function updatePublicContext(
@@ -136,7 +144,7 @@ export function createMainPlatform(options: CreateMainPlatformOptions): MainPlat
   ): Promise<void> {
     const next = applyPublicPatch(snapshotOf(instanceId), patch)
     await options.runtimePort.updateInstanceProps(instanceId, copyProps(next))
-    snapshots.set(instanceId, next)
+    snapshots.set(instanceId, snapshotProps(next))
   }
 
   function notifyLocale(instanceId: string, locale: string): Promise<void> {
@@ -161,7 +169,7 @@ export function createMainPlatform(options: CreateMainPlatformOptions): MainPlat
     instanceId: string,
     data?: Readonly<Record<string, unknown>>,
   ): Promise<void> {
-    return emitToInstance(instanceId, AUTH_INVALID_TYPE, data ?? {})
+    return emitToInstance(instanceId, TOKEN_ERROR_TYPE, data ?? {})
   }
 
   function releaseInstance(instanceId: string): void {

@@ -64,17 +64,24 @@ const model = defineModel<QueryFormData>({ required: true })
 const emit = defineEmits<{ search: [] }>()
 const { translate } = useG2rainUi()
 
-/** reactive 模型原地改字段；普通对象则整体替换，以同时支持两种 v-model。 */
+/**
+ * reactive 模型原地改字段；普通对象则整体替换，以同时支持两种 v-model。
+ * 多个字段一次替换：受控的普通对象在父组件重渲染前不会更新，逐个替换会只剩最后一个。
+ */
+function updateFields(patch: Partial<QueryFormData>): void {
+  if (isReactive(model.value)) {
+    Object.assign(model.value, patch)
+    return
+  }
+
+  model.value = { ...model.value, ...patch }
+}
+
 function updateField<K extends keyof QueryFormData>(
   key: K,
   value: QueryFormData[K],
 ): void {
-  if (isReactive(model.value)) {
-    model.value[key] = value
-    return
-  }
-
-  model.value = { ...model.value, [key]: value }
+  updateFields({ [key]: value } as Partial<QueryFormData>)
 }
 
 function onIdChange(value: string | number | null | undefined): void {
@@ -122,10 +129,7 @@ function updateSortFromTable(sort: TableSortChange): void {
 }
 
 function handleReset(): void {
-  updateField('id', undefined)
-  updateField('createTime', undefined)
-  updateField('updateTime', undefined)
-  updateField('sorts', undefined)
+  updateFields({ id: undefined, createTime: undefined, updateTime: undefined })
   emit('search')
 }
 

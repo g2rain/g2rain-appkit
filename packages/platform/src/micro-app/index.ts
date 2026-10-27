@@ -5,6 +5,7 @@ import type { RuntimeCapability } from '../sub/types.js'
 export const MICRO_APP_EVENT_TYPES = [
   'g2rain:sub-app:request-token',
   'g2rain:main-app:token-response',
+  'g2rain:main-app:token-error',
   'g2rain:sub-app:token-invalid',
   'g2rain:sub-app:route-change',
   'g2rain:main-app:theme-changed',
@@ -62,6 +63,7 @@ function isMessage(value: unknown): value is MicroAppMessage {
 /**
  * 用 CustomEvent 收发微前端消息。单个监听器抛错交给 onHandlerError，不中断其余监听器。
  * 非浏览器环境必须传入 target。dispose 后不再派发，也不再接收。
+ * 自己发出的消息不回投给本适配器的订阅者（WeakSet 过滤）。
  */
 export function createBrowserEventAdapter<Message extends MicroAppMessage = MicroAppMessage>(
   options: BrowserEventAdapterOptions<Message> = {},
@@ -70,11 +72,12 @@ export function createBrowserEventAdapter<Message extends MicroAppMessage = Micr
   if (!target) throw new Error('createBrowserEventAdapter requires an EventTarget outside a browser environment.')
   const eventTypes = options.eventTypes ?? MICRO_APP_EVENT_TYPES as readonly Message['type'][]
   const handlers = new Set<(message: Message) => void | Promise<void>>()
+  const sent = new WeakSet<object>()
   let disposed = false
 
   const receive = (event: Event): void => {
     const detail = event instanceof CustomEvent ? event.detail : undefined
-    if (disposed || !isMessage(detail) || !eventTypes.includes(detail.type as Message['type'])) return
+    if (disposed || !isMessage(detail) || sent.has(detail) || !eventTypes.includes(detail.type as Message['type'])) return
     for (const handler of handlers) {
       Promise.resolve()
         .then(() => handler(detail as Message))
@@ -85,7 +88,9 @@ export function createBrowserEventAdapter<Message extends MicroAppMessage = Micr
 
   return {
     emit(message) {
-      if (!disposed) target.dispatchEvent(new CustomEvent(message.type, { detail: message }))
+      if (disposed) return
+      sent.add(message)
+      target.dispatchEvent(new CustomEvent(message.type, { detail: message }))
     },
     subscribe(handler) {
       if (disposed) return () => undefined
@@ -109,7 +114,7 @@ export interface MessageCapability<Message extends MicroAppMessage = MicroAppMes
 /**
  * bootstrap 之后可订会话级消息；mount 之后可按 instanceId 订定向消息。
  * 退订会同时从适配器和 Scope 移除，实例或 Definition 释放时订阅自动失效。
- * 适配器在 Definition Scope dispose 时释放，不跟随单个实例卸载。
+ * 适配器在 Definition dispose 时释放，不跟随单个实例卸载，也不挂在 bootstrap scope 上。
  */
 export function createMessageCapability<Message extends MicroAppMessage = MicroAppMessage>(
   adapter: EventAdapter<Message>,
@@ -144,7 +149,6 @@ export function createMessageCapability<Message extends MicroAppMessage = MicroA
       scope.add(() => {
         session = undefined
       })
-      scope.add(() => adapter.dispose())
     },
     mount(input) {
       const instanceId = input.context.instanceId
@@ -152,6 +156,9 @@ export function createMessageCapability<Message extends MicroAppMessage = MicroA
       input.scope.add(() => {
         instances.delete(instanceId)
       })
+    },
+    dispose() {
+      adapter.dispose()
     },
     subscribeSession(handler) {
       return subscribe(session, 'Session handlers require a bootstrapped message capability.', handler)

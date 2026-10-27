@@ -29,6 +29,43 @@ describe('createThemeController', () => {
     expect(listener).toHaveBeenCalledTimes(1)
     expect(persist).toHaveBeenCalledWith('dark')
   })
+
+  it('prefers an existing light/dark data-g2-theme over initialTheme', () => {
+    const root = document.createElement('div')
+    root.dataset.g2Theme = 'light'
+    const controller = createThemeController({ root, initialTheme: 'dark' })
+    expect(controller.getTheme()).toBe('light')
+    expect(root.dataset.g2Theme).toBe('light')
+  })
+
+  it('swallows persist rejection without unhandled rejection', async () => {
+    const root = document.createElement('div')
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const controller = createThemeController({
+      root,
+      persist: async () => {
+        throw new Error('persist failed')
+      },
+    })
+    controller.setTheme('dark')
+    await vi.waitFor(() => expect(error).toHaveBeenCalled())
+    error.mockRestore()
+  })
+
+  it('keeps notifying other listeners when one throws', () => {
+    const root = document.createElement('div')
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const second = vi.fn()
+    const controller = createThemeController({ root })
+    controller.subscribe(() => {
+      throw new Error('listener failed')
+    })
+    controller.subscribe(second)
+    controller.setTheme('dark')
+    expect(second).toHaveBeenCalledWith('dark')
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
 })
 
 describe('createThemeCapability', () => {
@@ -64,5 +101,18 @@ describe('createThemeCapability', () => {
     expect(root.dataset.g2Theme).toBe('dark')
     await capability.unmount?.(input)
     expect(root.dataset.g2Theme).toBe('dark')
+  })
+
+  it('rolls back to the previous standalone theme on rollbackUpdate', async () => {
+    const root = document.createElement('div')
+    const capability = createThemeCapability({ root })
+    const scope = createRuntimeScope()
+    const previous = context('standalone', 'light')
+    const next = context('standalone', 'dark')
+    await capability.mount?.({ context: previous, container: document.createElement('div'), scope })
+    await capability.update?.({ context: next, previous, scope })
+    expect(root.dataset.g2Theme).toBe('dark')
+    await capability.rollbackUpdate?.({ context: next, previous, scope })
+    expect(root.dataset.g2Theme).toBe('light')
   })
 })

@@ -1,4 +1,4 @@
-import { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
+import axiosLib, { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { createHttpClient } from './client.js'
 
@@ -51,14 +51,14 @@ describe('createHttpClient', () => {
     })
 
     await expect(client.get('/failed')).rejects.toMatchObject({
-      source: 'backend', code: 'DEMO_FAILED', requestId: 'request-1',
+      source: 'backend', errorCode: 'DEMO_FAILED', requestId: 'request-1',
     })
   })
 
   it('does not issue requests after disposal', async () => {
     const { client, dispose } = createHttpClient()
     dispose()
-    await expect(client.get('/disposed')).rejects.toMatchObject({ code: 'HTTP_CLIENT_DISPOSED' })
+    await expect(client.get('/disposed')).rejects.toMatchObject({ errorCode: 'HTTP_CLIENT_DISPOSED' })
   })
 
   describe('sse', () => {
@@ -105,7 +105,7 @@ describe('createHttpClient', () => {
       }
 
       await expect(client.sse('/chat', {}, vi.fn(), { adapter })).rejects.toMatchObject({
-        source: 'backend', code: 'DEMO_FAILED', requestId: 'r1',
+        source: 'backend', errorCode: 'DEMO_FAILED', requestId: 'r1',
       })
     })
 
@@ -124,5 +124,212 @@ describe('createHttpClient', () => {
       expect(ensureAccessToken).toHaveBeenCalledTimes(1)
       expect(onEvent).toHaveBeenCalledWith({ ok: true })
     })
+
+    it('refreshes and replays when HTTP 200 carries gateway.40002 as JSON', async () => {
+      let token = 'old-token'
+      const ensureAccessToken = vi.fn(async () => { token = 'new-token' })
+      const { client } = createHttpClient({ authSessionProvider: session(() => token), ensureAccessToken })
+      const adapter: AxiosAdapter = async (config) => {
+        if (config.headers.Authorization === 'Bearer old-token') {
+          return {
+            config, headers: { 'content-type': 'application/json' }, status: 200, statusText: 'OK',
+            data: streamOf('{"requestId":"r1","requestTime":"","status":401,"errorCode":"gateway.40002","errorMessage":"expired","data":null}'),
+          }
+        }
+        return { config, data: streamOf('data: {"ok":true}\n\n'), headers: { 'content-type': 'text/event-stream' }, status: 200, statusText: 'OK' }
+      }
+      const onEvent = vi.fn()
+
+      await client.sse('/chat', {}, onEvent, { adapter })
+
+      expect(ensureAccessToken).toHaveBeenCalledTimes(1)
+      expect(onEvent).toHaveBeenCalledWith({ ok: true })
+    })
+
+    it('reports NO_LOGIN when HTTP 200 carries gateway.40001 as JSON', async () => {
+      const authErrorHandler = vi.fn()
+      const { client } = createHttpClient({ authSessionProvider: session(() => 'token'), authErrorHandler })
+      const adapter: AxiosAdapter = async (config) => ({
+        config, headers: { 'content-type': 'application/json' }, status: 200, statusText: 'OK',
+        data: streamOf('{"requestId":"r1","requestTime":"","status":401,"errorCode":"gateway.40001","errorMessage":"login","data":null}'),
+      })
+
+      await expect(client.sse('/chat', {}, vi.fn(), { adapter })).rejects.toMatchObject({ errorCode: 'gateway.40001' })
+      expect(authErrorHandler).toHaveBeenCalledWith('NO_LOGIN', expect.anything())
+    })
+
+    it('skips non-JSON events with a warning and keeps reading', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const { client } = createHttpClient()
+      const adapter: AxiosAdapter = async (config) => ({
+        config, headers: {}, status: 200, statusText: 'OK',
+        data: streamOf('data: ping\n\ndata: {"n":1}\n\ndata: [DONE]\n\n'),
+      })
+      const onEvent = vi.fn()
+
+      await client.sse('/chat', {}, onEvent, { adapter })
+
+      expect(onEvent.mock.calls).toEqual([[{ n: 1 }]])
+      expect(warn).toHaveBeenCalledTimes(2)
+      warn.mockRestore()
+    })
+
+    /** 第一段数据后保持打开，记录是否被 cancel */
+    function openStream(first: string) {
+      const state = { cancelled: false, push: (_chunk: string) => {} }
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(first))
+          state.push = chunk => controller.enqueue(encoder.encode(chunk))
+        },
+        cancel() { state.cancelled = true },
+      })
+      return { stream, state }
+    }
+
+    it('cancels the underlying stream when the callback throws', async () => {
+      const { stream, state } = openStream('data: {"n":1}\n\n')
+      const { client } = createHttpClient()
+      const adapter: AxiosAdapter = async (config) => ({ config, data: stream, headers: {}, status: 200, statusText: 'OK' })
+
+      await expect(client.sse('/chat', {}, () => { throw new Error('boom') }, { adapter })).rejects.toBeTruthy()
+      expect(state.cancelled).toBe(true)
+    })
+
+    it('stops dispatching and releases the stream after dispose', async () => {
+      const { stream, state } = openStream('data: {"n":1}\n\n')
+      const { client, dispose } = createHttpClient()
+      const adapter: AxiosAdapter = async (config) => ({ config, data: stream, headers: {}, status: 200, statusText: 'OK' })
+      const onEvent = vi.fn()
+
+      const running = client.sse('/chat', {}, onEvent, { adapter })
+      await vi.waitFor(() => expect(onEvent).toHaveBeenCalledTimes(1))
+      dispose()
+      state.push('data: {"n":2}\n\n')
+
+      await expect(running).rejects.toMatchObject({ errorCode: 'HTTP_CLIENT_DISPOSED' })
+      expect(onEvent).toHaveBeenCalledTimes(1)
+      expect(state.cancelled).toBe(true)
+    })
+  })
+
+  it('attaches the backend Result on detail when business fails', async () => {
+    const result = { requestId: 'request-1', requestTime: '', status: 400, errorCode: 'DEMO_FAILED', errorMessage: 'Failed', data: null }
+    const { axios, client } = createHttpClient()
+    axios.defaults.adapter = async (config) => ({
+      config, data: result, headers: {}, status: 200, statusText: 'OK',
+    })
+
+    await expect(client.get('/failed')).rejects.toMatchObject({ errorCode: 'DEMO_FAILED', detail: result })
+  })
+
+  it('notifies NO_LOGIN only once for concurrent gateway.40001 responses', async () => {
+    const authErrorHandler = vi.fn()
+    const { axios, client } = createHttpClient({
+      authSessionProvider: () => ({
+        client: null, isLogin: true, isAccessTokenValid: true, tokenExpired: false,
+        tokenString: 'token', setTokenExpired: vi.fn(),
+      }),
+      authErrorHandler,
+    })
+    axios.defaults.adapter = async (config) => ({
+      config,
+      data: { requestId: 'r1', requestTime: '', status: 401, errorCode: 'gateway.40001', errorMessage: 'login', data: null },
+      headers: {}, status: 200, statusText: 'OK',
+    })
+
+    const results = await Promise.allSettled([client.get('/a'), client.get('/b'), client.get('/c')])
+    expect(results.every((item) => item.status === 'rejected')).toBe(true)
+    expect(authErrorHandler).toHaveBeenCalledTimes(1)
+    expect(authErrorHandler).toHaveBeenCalledWith('NO_LOGIN', expect.anything())
+  })
+
+  it('keeps the original Error message for client-side failures', async () => {
+    const { axios, client } = createHttpClient({ withAuth: false })
+    axios.interceptors.request.use(() => {
+      throw new Error('sign failed: missing key')
+    })
+    await expect(client.get('/signed')).rejects.toMatchObject({
+      errorCode: 'HTTP_CLIENT_FAILED',
+      message: 'sign failed: missing key',
+    })
+  })
+
+  it('abandons waiting for a shared refresh when the request is aborted', async () => {
+    let token = 'old-token'
+    let accessValid = false
+    let finishRefresh!: () => void
+    const ensureAccessToken = vi.fn(
+      () => new Promise<void>(resolve => {
+        finishRefresh = () => { token = 'new-token'; accessValid = true; resolve() }
+      }),
+    )
+    const { axios, client } = createHttpClient({
+      authSessionProvider: () => ({
+        client: null, isLogin: true, isAccessTokenValid: accessValid, tokenExpired: false,
+        tokenString: token, setTokenExpired: vi.fn(),
+      }),
+      ensureAccessToken,
+    })
+    axios.defaults.adapter = async (config) => ({
+      config, data: { requestId: 'r', requestTime: '', status: 200, errorCode: '', errorMessage: '', data: config.headers.Authorization },
+      headers: {}, status: 200, statusText: 'OK',
+    })
+
+    const controller = new AbortController()
+    const aborted = client.get('/a', undefined, { signal: controller.signal }).catch(error => error)
+    await vi.waitFor(() => expect(ensureAccessToken).toHaveBeenCalledTimes(1))
+    controller.abort()
+    const cancelError = await aborted
+    expect(axiosLib.isCancel(cancelError)).toBe(true)
+
+    finishRefresh()
+    await expect(client.get('/b')).resolves.toMatchObject({ data: 'Bearer new-token' })
+  })
+
+  it('replays with the new token without refreshing when another client already refreshed', async () => {
+    let token = 'old-token'
+    const ensureAccessToken = vi.fn(async () => { token = 'should-not-run' })
+    const { axios, client } = createHttpClient({
+      authSessionProvider: () => ({
+        client: null, isLogin: true, isAccessTokenValid: true, tokenExpired: false,
+        tokenString: token, setTokenExpired: vi.fn(),
+      }),
+      ensureAccessToken,
+    })
+    let calls = 0
+    axios.defaults.adapter = async (config) => {
+      calls += 1
+      if (calls === 1) {
+        // 返回 401 前模拟别的 client 已刷新
+        token = 'new-token'
+        throw unauthorized(config)
+      }
+      return {
+        config, data: { requestId: 'r', requestTime: '', status: 200, errorCode: '', errorMessage: '', data: config.headers.Authorization },
+        headers: {}, status: 200, statusText: 'OK',
+      }
+    }
+
+    await expect(client.get('/x')).resolves.toMatchObject({ data: 'Bearer new-token' })
+    expect(ensureAccessToken).not.toHaveBeenCalled()
+  })
+
+  it('defaults string bodies to application/json and keeps explicit content types', async () => {
+    const { axios, client } = createHttpClient({ withAuth: false })
+    const seen: string[] = []
+    axios.defaults.adapter = async (config) => {
+      seen.push(String(config.headers.getContentType() ?? ''))
+      return { config, data: { requestId: 'r', requestTime: '', status: 200, errorCode: '', errorMessage: '', data: null }, headers: {}, status: 200, statusText: 'OK' }
+    }
+
+    await client.post('/x', '{"a":1}')
+    await client.post('/y', 'plain', { headers: { 'Content-Type': 'text/plain' } })
+    await client.post('/z', new URLSearchParams({ a: '1' }))
+
+    expect(seen[0]).toMatch(/application\/json/)
+    expect(seen[1]).toMatch(/text\/plain/)
+    expect(seen[2]).toMatch(/application\/x-www-form-urlencoded/)
   })
 })

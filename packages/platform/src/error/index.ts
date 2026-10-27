@@ -83,9 +83,9 @@ function cleanContext(value: unknown): Readonly<Record<string, unknown>> | undef
 }
 
 function hasHttpShape(record: Record<string, unknown>): boolean {
-  return typeof record.code === 'string'
+  return typeof record.errorCode === 'string'
     && isSource(record.source)
-    && ('status' in record || 'requestId' in record || 'retryable' in record || 'requestTime' in record || 'errorCode' in record)
+    && ('status' in record || 'requestId' in record || 'retryable' in record || 'requestTime' in record || 'detail' in record)
 }
 
 function severityOf(value: unknown): PlatformError['severity'] {
@@ -117,18 +117,18 @@ function copyError(error: PlatformError): PlatformError {
 
 /**
  * 统一成 PlatformError，并去掉 context 里的敏感字段。
- * 带 code、source 以及 status 等请求字段的对象按 HTTP 错误保留后端码和请求标识；
+ * 带 errorCode、source 以及 status 等请求字段的对象按 HTTP 错误保留后端码和请求标识；
  * 这类对象没有生命周期阶段，phase 固定为 mount，只作占位。
  * 其他 Error 记为 unknown，并保留 cause。
  */
 export function normalizeError(error: unknown): PlatformError {
   if (error instanceof PlatformError) return copyError(error)
   if (isRecord(error) && hasHttpShape(error)) {
-    const code = error.code as string
+    const errorCode = error.errorCode as string
     const source = error.source as PlatformErrorSource
-    const backendCode = present(error.errorCode) ?? (source === 'backend' ? code : undefined)
+    const backendCode = source === 'backend' ? errorCode : undefined
     return new PlatformError({
-      code,
+      code: errorCode,
       phase: 'mount',
       message: present(error.message) ?? (error instanceof Error ? error.message : ''),
       source,
@@ -180,7 +180,7 @@ async function displayMessage(
   if (resolution.messageKey && options.translate) {
     try {
       const translated = present(await options.translate(resolution.messageKey))
-      if (translated) return translated
+      if (translated && translated !== resolution.messageKey) return translated
     } catch {
       // 翻译失败时按固定顺序继续降级。
     }

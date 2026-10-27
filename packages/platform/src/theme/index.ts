@@ -11,7 +11,7 @@ export interface ThemeController {
 }
 
 /**
- * 把主题写到根节点的 data-g2-theme。初始值优先读节点上已有的 dataset，否则用 initialTheme，默认 light。
+ * 把主题写到根节点的 data-g2-theme。初始值：根已有 light/dark 用它，否则 initialTheme，再否则 light。
  * 非浏览器环境必须传入 root。相同主题或已 dispose 时 setTheme 不产生副作用。
  */
 export function createThemeController(options: {
@@ -22,7 +22,9 @@ export function createThemeController(options: {
   const root = options.root ?? (typeof document === 'undefined' ? undefined : document.documentElement)
   if (!root) throw new Error('createThemeController requires a root outside a browser environment.')
   let disposed = false
-  let currentTheme: G2rainTheme = root.dataset.g2Theme === 'dark' ? 'dark' : options.initialTheme ?? 'light'
+  const fromRoot = root.dataset.g2Theme
+  let currentTheme: G2rainTheme =
+    fromRoot === 'light' || fromRoot === 'dark' ? fromRoot : options.initialTheme ?? 'light'
   const listeners = new Set<(theme: G2rainTheme) => void>()
   root.dataset.g2Theme = currentTheme
 
@@ -32,8 +34,17 @@ export function createThemeController(options: {
       if (disposed || theme === currentTheme) return
       currentTheme = theme
       root.dataset.g2Theme = theme
-      void options.persist?.(theme)
-      listeners.forEach(listener => listener(theme))
+      // 包一层 Promise：persist 同步抛错和异步失败都在这里接住，不影响 setTheme
+      void new Promise<void>(resolve => resolve(options.persist?.(theme))).catch(error => {
+        console.error(error)
+      })
+      listeners.forEach(listener => {
+        try {
+          listener(theme)
+        } catch (error) {
+          console.error(error)
+        }
+      })
     },
     subscribe(listener) {
       if (disposed) return () => undefined
@@ -76,6 +87,9 @@ export function createThemeCapability(options: {
     },
     update(input) {
       apply(input.context)
+    },
+    rollbackUpdate(input) {
+      apply(input.previous)
     },
     dispose() {
       owned?.dispose()

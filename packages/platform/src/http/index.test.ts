@@ -63,4 +63,39 @@ describe('createHttpCapability', () => {
     expect(bindingDispose).toHaveBeenCalledTimes(1)
     expect(clientDispose).not.toHaveBeenCalled()
   })
+
+  it('rolls locale back when a later capability update fails', async () => {
+    const updates: unknown[] = []
+    const capability = createHttpCapability({
+      attach: () => ({
+        updatePublicContext(patch) {
+          updates.push(patch)
+        },
+        dispose: vi.fn(),
+      }),
+    })
+    const scope = createRuntimeScope()
+    const previous = context({ locale: 'zh-CN' })
+    const next = context({ locale: 'en-US' })
+
+    await capability.bootstrap?.({ scope })
+    await capability.mount?.({
+      context: previous,
+      container: document.createElement('div'),
+      scope,
+    })
+    await capability.update?.({
+      context: next,
+      previous,
+      scope,
+    })
+    await capability.rollbackUpdate?.({
+      context: next,
+      previous,
+      scope,
+    })
+
+    expect(updates).toEqual([{ locale: 'zh-CN' }, { locale: 'en-US' }, { locale: 'zh-CN' }])
+    await scope.dispose()
+  })
 })

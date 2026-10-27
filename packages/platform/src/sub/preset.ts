@@ -27,7 +27,7 @@ export interface StandardSubPlatform extends SubPlatform {
 export function createStandardSubPlatform(options: StandardSubPlatformOptions): StandardSubPlatform {
   const errors = createErrorCapability({
     ...options.error,
-    translate: key => options.i18n.engine.translate(key),
+    translate: options.error.translate ?? (key => options.i18n.engine.translate(key)),
   })
   const platform = createSubPlatform({
     applicationCode: options.applicationCode,

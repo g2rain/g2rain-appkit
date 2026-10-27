@@ -118,4 +118,17 @@ describe('platform components', () => {
     expect(apiMethod).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
+  it('still emits success when the parent already changed modelValue during submit', async () => {
+    let finish!: () => void
+    const apiMethod = vi.fn(() => new Promise<void>(resolve => { finish = resolve }))
+    const wrapper = mount(StatusSwitch, { props: { modelValue: 'INACTIVE', apiMethod }, global: { stubs: { ElSwitch: true } } })
+    wrapper.findComponent(ElSwitch).vm.$emit('change', 'ACTIVE')
+    await wrapper.setProps({ modelValue: 'ACTIVE' })
+    finish()
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.emitted('change')).toBeUndefined()
+    expect(wrapper.emitted('success')).toEqual([[{ nextValue: 'ACTIVE', prevValue: 'INACTIVE' }]])
+    wrapper.unmount()
+  })
 })

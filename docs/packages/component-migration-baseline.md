@@ -69,7 +69,7 @@ import type { G2rainDataProviders } from '@g2rain/ui/platform'
 
 export interface G2rainPlatformUiOptions {
   dataProviders?: G2rainDataProviders
-  onMissingProvider?: (name: 'organ' | 'dict') => void
+  onMissingProvider?: (name: 'organ' | 'dict' | 'permission') => void
 }
 ```
 
@@ -169,6 +169,7 @@ export interface SortableTableExpose {
 - 透传 Element Plus TableColumn Attributes 和默认/Header Slots。
 - Props：`sortable?: boolean | 'custom'`、`sortBy?: string | ((row: unknown) => unknown)`、`sortOrders?: Array<SortOrder | null>`。
 - 默认排序顺序为 ascending、descending、null。
+- 挂载时向 `SortableTable` 注册列；`label` 变化时按同一 `prop` 替换注册（语言切换后排序弹窗列名同步更新）。
 
 内部 Provide/Inject 必须使用包内导出的 Symbol，不使用 `registerColumn`、`tableSort` 等裸字符串，防止宿主冲突。
 
@@ -199,20 +200,25 @@ export interface RemoteSelectExpose {
 - 默认值保持 Manager 基准：`valueKey=value`、`labelKey=label`、宽度 200px、防抖 300ms，两个布尔增强项默认 false。
 - 事件：`update:modelValue`、`change`、`clear`。
 - Expose：`focus`、`openDropdown`。
-- 新请求开始或组件卸载时中止旧请求；不支持 AbortSignal 的旧 API 可以忽略可选参数。
-- 仅最后一次未取消请求可以更新 options 和 loading。
+- 预取、回显、搜索各走一个请求通道：新请求只中止同类的上一次请求，互不作废；组件卸载时全部中止。不支持 AbortSignal 的旧 API 可以忽略可选参数。
+- 每个通道只有最后一次未取消的请求可以写回结果；loading 在任一通道请求中为 true。
+- 语言变化时清空缓存，重新预取并回显当前值。
+- 值被清空后，启用 `autoSelectFirstWhenEmpty` 时重新选中默认列表第一项。
 - Placeholder 通过 Translator 获取，显式 Prop 优先。
 
 `ApiSelect`：
 
 - Props 兼容 CMS 基准，并保留 `allowEmptyKeyword` 和 `prefetchOnOpen`。
 - 默认 `valueKey=id`、`labelKey=name`、`allowEmptyKeyword=false`。
+- 空关键字时须 `allowEmptyKeyword` 与 `prefetchOnOpen` 同时为 true 才请求，否则返回 `[]`。
 - API 方法适配为 `FetchDataFunction`，不导入具体 API。
 
 `DictSelect`：
 
 - `modelValue` 规范化为 `string | null | undefined`。
-- API 方法由 Prop 注入，并允许附加 `usageCode`。
+- `apiMethod` 可选：显式传入优先；未传时用 `dataProviders.dict.loadOptions`（带 `usageCode`/`key`/`signal`/`locale`）；两者都没有时调用 `onMissingProvider('dict')` 并返回 `[]`。
+- 只在有 `usageCode` 时预取；没有 `usageCode` 也没有关键字时不请求。
+- 纯数字按名称关键字 `key` 搜索，不按 `value` 查；`usageCode` 变化时重新加载。
 - 默认 `valueKey=code`、`labelKey=name`。
 
 ## 7. 生成与验证规则

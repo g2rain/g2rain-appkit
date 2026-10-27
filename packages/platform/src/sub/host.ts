@@ -45,8 +45,9 @@ export interface ResolvedSubHost {
 }
 
 function present(value: string | undefined): string | undefined {
-  if (typeof value !== 'string' || value.trim() === '') return undefined
-  return value
+  if (typeof value !== 'string') return undefined
+  const text = value.trim()
+  return text === '' ? undefined : text
 }
 
 function invalidHost(message: string): PlatformError {

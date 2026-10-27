@@ -3,7 +3,7 @@
 - 状态：试点实施中
 - 日期：2026-09-20
 - 开发操作：[Main Shell 接入](../integration/main.md)、中央 [Main Shell 契约](https://github.com/g2rain/g2rain/blob/main/docs/architecture/profiles/frontend-shell/main-shell-contract.md)、[业务 App 接入](../integration/app.md)
-- 目标包：`@g2rain/platform`（Kernel、`/sub`、标准 Preset 和独立 Capability 已落地，Member 已接入 `/sub`，Main Shell 尚未接入 `/main`）
+- 目标包：`@g2rain/platform`（Kernel、`/sub`、标准 Preset 和独立 Capability 已落地，Member 已接入 `/sub`，Main Shell 已接入 `/main`）
 - 内部核心：Runtime Kernel
 - 当前基线：`packages/platform` 已提供包根共享契约、`createSubPlatform`、`createStandardSubPlatform`、`resolveSubHostProps`、`createMainPlatform`，以及 Theme、Loading、Permission、Micro App、I18n、Error、HTTP Capability。这些能力可单独导入。`g2rain-member-app` 已接入 `/sub` 并于 2026-09-20 经用户确认为基本验证成功；Main Shell 的 `/main` 协调端口接线和联合验收仍未完成。
 
@@ -296,7 +296,7 @@ export type RuntimeContextUpdate = Partial<
 - 当前子应用 props 仍把 `tab.key` 放在 `appKey` 中。迁移期应用入口使用 `instanceId = props.instanceId ?? props.appKey`、`viewId = props.viewId ?? props.appKey` 解析旧协议；Main Shell 补齐新字段后删除旧 `appKey` 定向语义。
 - `container` 和 `scope` 是实例资源，不放入可序列化 Context。
 - qiankun Props 只在 `mount` 才完整可用，因此不存在 `getInitialContext()`；应用入口在每次 mount 时校验并生成输入。
-- `update` 只接受 `locale`、`initialRoute` 等可公开字段的新快照。集成模式首版没有主题字段；子应用继承主应用文档上的 `data-theme`。
+- `update` 只接受 `locale`、`initialRoute` 等可公开字段的新快照。集成模式首版没有主题字段；子应用继承主应用文档上的 `data-g2-theme`（仅 `light` / `dark`）。
 - Token、Token Kid、私钥和完整用户资料禁止进入 Context、`metadata`、日志和错误上下文。
 - 认证信息由应用 Auth Bridge 瞬时消费，应用 qiankun 入口不得把 Token props 映射进 Context，Kernel 也不保存副本。
 
@@ -454,7 +454,7 @@ export interface MainPlatformCoordinator {
 
 `MainPlatformRuntimePort` 由 Main Shell 现有 RuntimeStore、QiankunManager 和消息适配器实现。Platform Main 不包装 `loadMicroApp` 或 `MicroApp` handle，也不提供 qiankun 专用入口。
 
-appkit 已落地 `createMainPlatform`。公开 props 类型是 `MainPublicProps`；`activeRule` 与 `entryOrigin` 通过 `MainHostFields` 附加，不写入 `RuntimeContext`。`notifyLocale` 与 `notifyAuthInvalid` 已提供，认证失效沿用 `g2rain:sub-app:token-invalid`。`releaseInstance` 只删除该实例的公开快照，不碰端口，也不保存 Token；快照已不存在时直接返回。定向消息是 `/main` 的 `MainDirectedMessage`，`appKey` 固定等于 `instanceId`。协调器不下发 `theme` 或 `metadata`，也不发送 `g2rain:main-app:theme-changed`。壳尚未实现 `runtimePort`。
+appkit 已落地 `createMainPlatform`。公开 props 类型是 `MainPublicProps`；`activeRule` 与 `entryOrigin` 通过 `MainHostFields` 附加，不写入 `RuntimeContext`。`notifyLocale` 与 `notifyAuthInvalid` 已提供，认证失效发送主发子的 `g2rain:main-app:token-error`。`initialRoute` 只在挂载和显式导航的那次下发，快照不保留。`releaseInstance` 只删除该实例的公开快照，不碰端口，也不保存 Token；快照已不存在时直接返回。定向消息是 `/main` 的 `MainDirectedMessage`，`appKey` 固定等于 `instanceId`。协调器不下发 `theme` 或 `metadata`，也不发送 `g2rain:main-app:theme-changed`。壳尚未实现 `runtimePort`。
 
 ### 5.2 Sub 侧应用集成边界
 
@@ -497,7 +497,7 @@ export interface SubApplication {
 }
 ```
 
-应用的 qiankun 入口负责生命周期转发、容器校验和 Auth Bridge 调用；独立入口负责环境读取和启动顺序。Kernel 只接收标准 `SubMountRequest`。双壳差异由 `/sub` 的 `resolveSubHostProps` 在进内核前消掉：没有 `instanceId` 时把现行壳的 `appKey` 当作实例键，Token 只放进一次性 `auth`；有 `instanceId` 时要求完整的新壳身份，且 `appKey` 等于 `instanceId`。`createSubDirectedMessage` 的 `appKey` 同样固定等于 `instanceId`。这两处都不导入 qiankun，也不改 Kernel。Member 已按此边界接入，现行壳仍可通过 `appKey` 兼容路径驱动；Main Shell 尚未接入 `/main`。未来替换 qiankun 时修改 Main Shell RuntimeAdapter 和应用入口，不修改 Platform 公共协议或 Sub 内核。
+应用的 qiankun 入口负责生命周期转发、容器校验和 Auth Bridge 调用；独立入口负责环境读取和启动顺序。Kernel 只接收标准 `SubMountRequest`。`/sub` 的 `resolveSubHostProps` 在进内核前校验身份：缺少 `instanceId` 的 props 会被拒绝；完整身份要求 `applicationCode`、`viewId`、`instanceId`、`appKey`，且 `appKey` 等于 `instanceId`。`createSubDirectedMessage` 的 `appKey` 同样固定等于 `instanceId`。这两处都不导入 qiankun，也不改 Kernel。未来替换 qiankun 时修改 Main Shell RuntimeAdapter 和应用入口，不修改 Platform 公共协议或 Sub 内核。
 
 ## 6. Theme Adapter：隔离主题和 UI 框架
 
@@ -520,12 +520,12 @@ export interface ThemeAdapter {
 }
 ```
 
-`G2rainTheme` 仍是 `@g2rain/theme` 的 `'light' | 'dark'`，对应 `data-g2-theme`。这不是 Main Shell 的现行主题协议。主应用写的是 `documentElement` 的 `data-theme`，取值包括 `light`、`dark` 和 `g2rain`，`setTheme` 不向子应用发消息，挂载 props 里也没有 theme。
+`G2rainTheme` 是 `@g2rain/theme` 的 `'light' | 'dark'`，对应根节点 `data-g2-theme`，仅这两种取值。集成模式不经 props 下发 theme；主应用把当前主题写到子应用包裹层的 `data-g2-theme` 上。
 
 主题所有权按模式区分：
 
 - **独立模式**：应用可以调用 DOM Theme Adapter，把 `@g2rain/theme` 主题写入 `document.documentElement.dataset.g2Theme`；初始值选择和持久化策略仍由应用负责。
-- **集成模式**：子应用继承主应用已经写在文档上的 CSS，不调用 `apply`，也不在 `unmount` 时删除根属性。首版不订阅尚不存在的 `g2rain:main-app:theme-changed`。主应用以后若要主动通知，再把当时的属性名和取值补进消息，不能提前收成两套主题。
+- **集成模式**：子应用不调用 `apply`，也不在 `unmount` 时删除根属性。主应用把当前主题写到子应用 qiankun 包裹层的 `data-g2-theme` 上（样式隔离把子应用的 `:root` 改写成该元素），切换主题时同步更新。首版不订阅尚不存在的 `g2rain:main-app:theme-changed`。主应用以后若要主动通知，再把当时的属性名和取值补进消息，不能提前收成两套主题。
 - 多个 `instanceId` 可以分别持有订阅 Scope，但不能竞争修改全局 `:root`。
 
 替换分为两类：
@@ -804,7 +804,7 @@ appkit 已实现 Definition、`Map<instanceId, PlatformInstance>`、Runtime Cont
 
 ### 阶段 3：Platform 标准能力
 
-appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 HTTP 做成可单独导入的 Capability。`createStandardSubPlatform` 强制先挂 I18n，再挂依赖它的 Error。`createSubPlatform` 仍只接受 `capabilities` 数组。Member 已使用标准 Preset，并由应用注入其余能力；Main Shell 尚未接入 `/main`。
+appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 HTTP 做成可单独导入的 Capability。`createStandardSubPlatform` 强制先挂 I18n，再挂依赖它的 Error。`createSubPlatform` 仍只接受 `capabilities` 数组。Member 已使用标准 Preset，并由应用注入其余能力；Main Shell 已接入 `/main`。
 
 - 把现有 Theme、Loading、Permission、Micro App 包装为 Capability。
 - 新增 I18n Capability 和官方 `vue-i18n`/UI Locale Adapter。
@@ -869,7 +869,7 @@ appkit 已把 Theme、Loading、Permission、Micro App、I18n、Error 和可选 
 5. 不提供 `/main/qiankun` 或 `/sub/qiankun`。Main Shell 保留 RuntimeAdapter，子应用保留自己的 qiankun lifecycle。
 6. `applicationCode`、`viewId`、`instanceId` 分别表示实际应用、工作区页面视图和运行实例；旧 `appKey` 仅用于迁移兼容。Main Shell 负责同一 `instanceId` 操作串行。一份子应用 JavaScript 只调用一次 `createSubPlatform`，多个 `instanceId` 可以同时 `mounted`。
 7. Sub 标准 Preset 强制启用 I18n 和 Error；Error 依赖 I18n。Error Capability 可单独使用，并按固定规则降级文案。
-8. `@g2rain/theme` 的主题名首版保持 `'light' | 'dark'`。集成模式子应用不写根节点，并继承主应用现行的 `data-theme`（含 `g2rain`）；首版不引入 `theme-changed` 消息。
+8. `@g2rain/theme` 的主题名首版保持 `'light' | 'dark'`。集成模式子应用不写根节点，主题由主应用写到子应用包裹层的 `data-g2-theme`；首版不引入 `theme-changed` 消息。
 9. Main Shell 是集成模式生命周期唯一驱动者，Platform Sub 不接受预创建的 Vue App，也不存在第二条 `platform.mount(app)` 控制流。切 Tab 只改壳的 `inactive`，不调用 Sub `unmount`。
 10. Token 不进入 Runtime Context。Manager/Department 当前 props 初始化由应用 Auth Bridge 写入会话级 Token Store，后续可替换为纯消息实现。
 11. Pinia、HTTP 和 Token Store 由应用组合根创建一次。Vue、Router 和实例监听按 `instanceId` 隔离。Kernel 不提供 Shared Resource Registry，也不接管 `tokenExpired` 引用计数。

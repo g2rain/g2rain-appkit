@@ -15,7 +15,6 @@ import { useG2rainPlatformUi } from './provide'
 const props = withDefaults(defineProps<{
   modelValue?: number | null
   apiMethod?: EntityDataProvider['loadOptions']
-  query?: Readonly<Record<string, unknown>>
   defaultValue?: number | null
   clearable?: boolean
   autoSelectFirstWhenEmpty?: boolean
@@ -32,12 +31,12 @@ const ui = useG2rainUi()
 const platform = useG2rainPlatformUi()
 const select = ref<RemoteSelectExpose>()
 const dataVersion = ref(0)
-/** 数据源、查询条件或 locale 变化时更换 key，强制内部 RemoteSelect 按新条件重新加载。 */
-watch(() => [props.apiMethod, props.query, ui.locale?.(), platform.dataProviders?.organ?.loadOptions], () => { dataVersion.value++ }, { deep: true })
+/** 数据源变化时更换 key，强制内部 RemoteSelect 重新加载；语言变化由 RemoteSelect 自己重新加载。 */
+watch(() => [props.apiMethod, platform.dataProviders?.organ?.loadOptions], () => { dataVersion.value++ })
 const policy = computed(() => platform.dataProviders?.organ?.getPolicy?.() ?? {})
 const normalize = (value: RemoteSelectValue) => value == null ? value : Number.isFinite(Number(value)) ? Number(value) : null
-/** 当前值为空且存在默认值时写入。已经有选中值时不覆盖。 */
-watch(() => [props.modelValue, props.defaultValue ?? policy.value.defaultValue] as const, ([current, fallback]) => {
+/** 当前值为空且存在默认值时写入。已经有选中值时不覆盖；显式传 defaultValue=null 表示不回填。 */
+watch(() => [props.modelValue, props.defaultValue !== undefined ? props.defaultValue : policy.value.defaultValue] as const, ([current, fallback]) => {
   if (current == null && fallback != null) { emit('update:modelValue', fallback); emit('change', fallback) }
 }, { immediate: true })
 const fetchData: EntityDataProvider['loadOptions'] = async params => {
@@ -46,7 +45,7 @@ const fetchData: EntityDataProvider['loadOptions'] = async params => {
     platform.onMissingProvider?.('organ')
     return []
   }
-  try { return await loader({ ...params, query: props.query, locale: ui.locale?.() }) }
+  try { return await loader({ ...params, locale: ui.locale?.() }) }
   catch (error) { if (!params.signal?.aborted) emit('error', error); return [] }
 }
 defineExpose({ focus: () => select.value?.focus(), openDropdown: () => select.value?.openDropdown() })

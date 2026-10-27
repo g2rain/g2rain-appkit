@@ -73,7 +73,8 @@ const innerValue = computed({
 
 const fetchData: FetchDataFunction = async (params) => {
   const hasQuery = Boolean(params.key?.trim()) || params.value !== undefined
-  if (!hasQuery && !props.allowEmptyKeyword && !props.prefetchOnOpen) return []
+  // 空关键字须 allowEmptyKeyword 与 prefetchOnOpen 同时开启才请求，避免仅预取开关就拉全量
+  if (!hasQuery && !(props.allowEmptyKeyword && props.prefetchOnOpen)) return []
   return props.apiMethod(params)
 }
 </script>

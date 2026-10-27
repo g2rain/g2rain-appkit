@@ -76,6 +76,19 @@ describe('createMainPlatform', () => {
     }))
   })
 
+  it('returns trimmed identity fields in public props', () => {
+    const main = createMainPlatform({ runtimePort: port().runtimePort })
+    const props = main.buildPublicProps(context({
+      applicationCode: ' member ',
+      viewId: ' view ',
+      instanceId: ' a ',
+    }))
+    expect(props.applicationCode).toBe('member')
+    expect(props.viewId).toBe('view')
+    expect(props.instanceId).toBe('a')
+    expect(props.appKey).toBe('a')
+  })
+
   it('updates only locale and initialRoute and drops theme', async () => {
     const harness = port()
     const main = createMainPlatform({ runtimePort: harness.runtimePort })
@@ -89,15 +102,29 @@ describe('createMainPlatform', () => {
     await main.notifyLocale('menu-member', 'fr')
 
     expect(harness.updates).toEqual([
-      expect.objectContaining({ locale: 'en', initialRoute: '/dict', appKey: 'menu-member' }),
+      expect.objectContaining({ locale: 'en', appKey: 'menu-member' }),
       expect.objectContaining({ locale: 'fr' }),
     ])
     for (const update of harness.updates) {
+      // initialRoute 只在挂载时下发，之后的 update 不重发，避免子应用被拉回初始路由
+      expect(update).not.toHaveProperty('initialRoute')
       expect(update).not.toHaveProperty('theme')
       expect(update).not.toHaveProperty('metadata')
       expect(JSON.stringify(update)).not.toContain('secret')
       expect(JSON.stringify(update)).not.toContain('later')
     }
+  })
+
+  it('sends initialRoute only on the update that navigates', async () => {
+    const harness = port()
+    const main = createMainPlatform({ runtimePort: harness.runtimePort })
+    main.buildPublicProps(context())
+
+    await main.updatePublicContext('menu-member', { initialRoute: '/member' })
+    await main.notifyLocale('menu-member', 'en')
+
+    expect(harness.updates[0]).toMatchObject({ initialRoute: '/member' })
+    expect(harness.updates[1]).not.toHaveProperty('initialRoute')
   })
 
   it('emits auth-invalid and directed messages from the public snapshot', async () => {
@@ -109,7 +136,7 @@ describe('createMainPlatform', () => {
     await main.emitToInstance('menu-member', 'g2rain:main-app:token-response', { ok: true })
 
     expect(harness.messages[0]).toMatchObject({
-      type: 'g2rain:sub-app:token-invalid',
+      type: 'g2rain:main-app:token-error',
       data: { reason: 'expired' },
       applicationCode: 'member',
       viewId: 'menu-member',
