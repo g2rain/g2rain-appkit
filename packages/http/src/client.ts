@@ -133,6 +133,7 @@ function untilAborted<T>(promise: Promise<T>, signal?: GenericAbortSignal): Prom
 export function createHttpClient<Direct extends boolean = false>(options: HttpClientOptions & { isDirectResponse?: Direct } = {}): HttpClientInstance<Direct> {
   const withAuth = options.withAuth ?? true
   let disposed = false
+  const activeStreams = new Set<AbortController>()
   let refresh: Promise<void> | undefined
   let refreshForced = false
   let noLoginNotified = false
@@ -286,34 +287,50 @@ export function createHttpClient<Direct extends boolean = false>(options: HttpCl
    */
   async function sse<T, Body>(url: string, data: Body | undefined, onEvent: (event: T) => void, config: AxiosRequestConfig<Body> = {}): Promise<void> {
     assertActive()
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    if (config.signal?.aborted) abort()
+    else config.signal?.addEventListener?.('abort', abort)
+    activeStreams.add(controller)
     try {
       const response = await instance.request<ReadableStream<BufferSource>>({
         method: 'POST', adapter: 'fetch', ...config, url, data,
         headers: { Accept: 'text/event-stream', ...config.headers },
         responseType: 'stream', timeout: 0,
+        signal: controller.signal,
       })
       const reader = response.data.pipeThrough(new TextDecoderStream()).getReader()
+      const cancelReader = () => { void reader.cancel().catch(() => undefined) }
+      controller.signal.addEventListener('abort', cancelReader)
+      if (controller.signal.aborted) cancelReader()
       let finished = false
       try {
         let buffer = ''
         for (;;) {
           assertActive()
-          const { value, done } = await reader.read()
+          const { value, done } = await untilAborted(reader.read(), controller.signal)
+          assertActive()
+          if (controller.signal.aborted) throw new CanceledError()
           if (done) { finished = true; break }
           // dispose 发生在等待下一段数据期间：丢弃这段，不再回调
           assertActive()
           buffer = dispatchEvents(buffer + value, onEvent)
         }
       } finally {
+        controller.signal.removeEventListener('abort', cancelReader)
         // 出错、dispose 或回调抛错时取消底层流，释放连接；正常读完只需释放锁
         if (!finished) await reader.cancel().catch(() => undefined)
         reader.releaseLock()
       }
     } catch (error) {
+      assertActive()
       if (axios.isCancel(error) || config.signal?.aborted) throw new CanceledError()
       const normalized = normalize(error)
       if (!disposed) await notify(() => options.onError?.(normalized))
       throw normalized
+    } finally {
+      activeStreams.delete(controller)
+      config.signal?.removeEventListener?.('abort', abort)
     }
   }
   const client: HttpClient<Direct> = {
@@ -325,5 +342,11 @@ export function createHttpClient<Direct extends boolean = false>(options: HttpCl
     patch: (url, data, config) => request({ ...config, url, method: 'PATCH', data }),
     sse,
   }
-  return { axios: instance, client, dispose() { disposed = true; instance.interceptors.request.eject(requestId); instance.interceptors.response.eject(responseId) } }
+  return { axios: instance, client, dispose() {
+    disposed = true
+    for (const controller of activeStreams) controller.abort()
+    activeStreams.clear()
+    instance.interceptors.request.eject(requestId)
+    instance.interceptors.response.eject(responseId)
+  } }
 }
